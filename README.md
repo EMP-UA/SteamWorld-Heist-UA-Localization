@@ -17,7 +17,7 @@ To ensure the safety and transparency of my installers, I am providing the **Inn
 - **Cleanup:** All registry entries and installed files are completely removed when the user runs the uninstaller. No global system settings, drivers, or security configurations are modified.
 
 
-Third-party Tools
+📦Third-party Tools
 
 For unpacking the main game .z files, I used the QuickBMS script provided by the Steam/Polish localization community.
 
