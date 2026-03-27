@@ -18,12 +18,13 @@ To ensure the safety and transparency of my installers, I am providing the **Inn
 
 
 ## 🧰 Third-party Tools & Credits
-This project wouldn't be possible without the foundational work of the modding community:
 
-- **[QuickBMS](https://github.com/LittleBigBug/QuickBMS):** Used as the primary engine for data extraction and re-importing. 
-- **Script Logic & Research:** - Special thanks to **sb8gapi** and the **[Graj po Polsku](https://grajpopolsku.pl/)** community for their research on the SteamWorld Heist `.fnt` and `.z` formats. 
-  - Additional logic for `.z` archives was sourced from the Steam Community discussions (SteamWorld Quest modding thread).
-- **[Inno Setup](https://jrsoftware.org/isinfo.php):** Used for creating the user-friendly installation package.
+This project stands on the shoulders of the modding community. I would like to acknowledge the following tools and researchers:
+
+* **[QuickBMS](https://github.com/LittleBigBug/QuickBMS):** The primary engine used for extracting and re-importing the game's `.z` text archives.
+* **Font Metrics Research:** Special thanks to **sb8gapi** and the **[Graj po Polsku](https://grajpopolsku.pl/)** community. Their technical analysis of the SteamWorld Heist `.fnt` structure provided the essential foundation for my custom C# font generation tools.
+* **Archive Logic:** Technical insights for handling `.z` and `.csv.z` files were sourced from the **Steam Community** (specifically modding discussions for *SteamWorld Quest*).
+* **[Inno Setup](https://jrsoftware.org/isinfo.php):** Used to create the professional installation package with integrated version detection and uninstaller support.
 
 
 ⚙️ My Development Workflow
