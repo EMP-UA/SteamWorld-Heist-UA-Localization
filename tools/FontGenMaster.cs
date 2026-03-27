@@ -9,14 +9,15 @@ using System.Text;
 
 /* * SteamWorld Heist Font Generation & Debug Tool
  * Developed by EMP_UA (Yevhenii)
- * * This tool is the core of the Ukrainian localization project. It handles:
+ * * Key Functionalities:
  * - Binary parsing of .fnt files to inject Cyrillic support.
  * - 'Slot Hijacking' to bypass engine limitations for unused ASCII characters.
  * - Dynamic generation of PNG font atlases using GDI+ with sub-pixel precision.
  * - Debug overlay generation for visual verification of character metrics.
- * * Technical Reference:
- * Special thanks to the 'Graj po Polsku' community (sb8gapi) for their initial 
- * research into the SteamWorld Heist font format metrics.
+ * * Technical Reference & Credits:
+ * - Font metrics research: sb8gapi (Graj po Polsku community).
+ * - Data extraction: Powered by QuickBMS (https://github.com/LittleBigBug/QuickBMS).
+ * - Script logic: Based on community findings from Steam and Graj po Polsku forums.
  */
 
 namespace SteamWorldUA_FontMaster
