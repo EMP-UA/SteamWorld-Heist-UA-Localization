@@ -17,9 +17,13 @@ To ensure the safety and transparency of my installers, I am providing the **Inn
 - **Cleanup:** All registry entries and installed files are completely removed when the user runs the uninstaller. No global system settings, drivers, or security configurations are modified.
 
 
-📦Third-party Tools
+## 🧰 Third-party Tools & Credits
+This project wouldn't be possible without the foundational work of the modding community:
 
-For unpacking the main game .z files, I used the QuickBMS script provided by the Steam/Polish localization community.
+- **[QuickBMS](https://github.com/LittleBigBug/QuickBMS):** Used as the primary engine for data extraction and re-importing. 
+- **Script Logic & Research:** - Special thanks to **sb8gapi** and the **[Graj po Polsku](https://grajpopolsku.pl/)** community for their research on the SteamWorld Heist `.fnt` and `.z` formats. 
+  - Additional logic for `.z` archives was sourced from the Steam Community discussions (SteamWorld Quest modding thread).
+- **[Inno Setup](https://jrsoftware.org/isinfo.php):** Used for creating the user-friendly installation package.
 
 
 ⚙️ My Development Workflow
