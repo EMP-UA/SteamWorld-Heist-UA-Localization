@@ -10,8 +10,8 @@ To ensure the safety and transparency of my installers, I am providing the **Inn
   - Replacing the main text archive (`en.csv.z`).
   - Deploying custom font atlases (`.png`) and generated font definitions (`.fnt`).
   - Updating DLC content by replacing repacked archives (`.impak`).
-- **Security:** The installer performs only file-copy operations within the game's installation folder and does not modify system settings.
-
+- **Security:** The installer performs file-copy operations within the game's folder. 
+- **Registry Use:** It creates standard registry keys **only** for the uninstaller and version tracking (to ensure correct updates). It does not modify global system settings, drivers, or OS security configurations.
 
 Third-party Tools
 
