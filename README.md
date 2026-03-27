@@ -22,5 +22,6 @@ AI Collaboration: I also utilized AI assistance (Google AI Studio/Gemini) for co
 
 
 📂 Repository Structure
+
 /installer — Contains my packexe.iss (Inno Setup source).
 /tools — (Coming Soon) My C# scripts for asset management and font generation.
