@@ -11,7 +11,11 @@ To ensure the safety and transparency of my installers, I am providing the **Inn
   - Deploying custom font atlases (`.png`) and generated font definitions (`.fnt`).
   - Updating DLC content by replacing repacked archives (`.impak`).
 - **Security:** The installer performs file-copy operations within the game's folder. 
-- **Registry Use:** It creates standard registry keys **only** for the uninstaller and version tracking (to ensure correct updates). It does not modify global system settings, drivers, or OS security configurations.
+- **Registry Use:** The installer creates a standard entry in **HKEY_CURRENT_USER** for two specific purposes:
+  1. **Uninstaller support:** To allow users to easily remove the localization via the Windows Control Panel.
+  2. **Version tracking:** To detect if version 0.50 is already installed and prevent duplicate installations or guide the user through a re-installation.
+- **Cleanup:** All registry entries and installed files are completely removed when the user runs the uninstaller. No global system settings, drivers, or security configurations are modified.
+
 
 Third-party Tools
 
