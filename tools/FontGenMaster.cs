@@ -15,9 +15,8 @@ using System.Text;
  * - Dynamic generation of PNG font atlases using GDI+ with sub-pixel precision.
  * - Debug overlay generation for visual verification of character metrics.
  * * Technical Reference & Credits:
- * - Font metrics research: sb8gapi (Graj po Polsku community).
- * - Data extraction: Powered by QuickBMS (https://github.com/LittleBigBug/QuickBMS).
- * - Script logic: Based on community findings from Steam and Graj po Polsku forums.
+ * - Font metrics research: Special thanks to sb8gapi (Graj po Polsku community) 
+ * for the initial research into the SteamWorld Heist .fnt structure.
  */
 
 namespace SteamWorldUA_FontMaster
