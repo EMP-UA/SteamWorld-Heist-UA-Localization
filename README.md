@@ -3,11 +3,14 @@ SteamWorld Heist — Ukrainian Localization (by EMP_UA)
 This repository contains the technical source code and scripts I developed for the Ukrainian localization of SteamWorld Heist.
 
 
-🛡️ Technical Transparency (for Nexus Mods)
+## 🛡️ Technical Transparency (for Nexus Mods)
 
-To ensure the safety and transparency of my installers, I am providing the Inno Setup script (packexe.iss).
-Purpose: Automates the deployment of localized assets (.bank files and DLC folders) to the game directory.
-Security: The installer performs only file-copy operations within the game's installation folder and does not modify system settings.
+To ensure the safety and transparency of my installers, I am providing the **Inno Setup script (`packexe.iss`)**. 
+- **Purpose:** Automates the deployment of localized assets to the game directory, specifically:
+  - Replacing the main text archive (`en.csv.z`).
+  - Deploying custom font atlases (`.png`) and generated font definitions (`.fnt`).
+  - Updating DLC content by replacing repacked archives (`.impak`).
+- **Security:** The installer performs only file-copy operations within the game's installation folder and does not modify system settings.
 
 
 Third-party Tools
