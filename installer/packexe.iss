@@ -1,8 +1,9 @@
 #define AppName "SteamWorld Heist Українізатор"
-#define AppVersion "0.50"
+#define AppVersion "0.51"
 #define AppPublisher "EMP_UA"
 #define AppURL "https://t.me/EMP_UA"
 #define AppId "{{A8D7E3B2-F7C1-4B9A-9D8E-5C1B3A4D5E6F}" ; Унікальний ID для реєстру Windows
+#define SteamAppId "322190" ; Офіційний ID гри SteamWorld Heist у Steam
 
 [Setup]
 AppId={#AppId}
@@ -14,12 +15,11 @@ AppSupportURL={#AppURL}
 AppUpdatesURL={#AppURL}
 
 ; --- Налаштування шляхів ---
-; Завдяки тому, що скрипт у ver 050, ми використовуємо відносні шляхи
 DefaultDirName={code:GetSteamPath}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 
-; Дозволяємо вибір папки (для дисків D:, E: тощо)
+; Дозволяємо вибір папки
 DisableDirPage=no
 DirExistsWarning=no
 
@@ -38,12 +38,12 @@ ukrainian.SelectDirDesc=Виберіть папку, у якій встанов�
 ukrainian.SelectDirLabel3=Інсталятор встановить українізатор (версія {#AppVersion}) у вказану папку.
 
 [Files]
-; Оскільки скрипт лежить у ver 050, шлях веде прямо в "чисту" папку для видачі
-Source: "ForDownload\SteamWorld Heist\Bundle\*"; DestDir: "{app}\Bundle"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "ForDownload\SteamWorld Heist\DLC\*"; DestDir: "{app}\DLC"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Шляхи до файлів перекладу
+Source: "SteamWorld Heist 051\Bundle\*"; DestDir: "{app}\Bundle"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "SteamWorld Heist 051\DLC\*"; DestDir: "{app}\DLC"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Registry]
-; Записуємо версію в реєстр користувача (найбезпечніший метод)
+; Записуємо версію в реєстр користувача
 Root: HKCU; Subkey: "Software\{#AppPublisher}\{#AppName}"; ValueType: string; ValueName: "Version"; ValueData: "{#AppVersion}"; Flags: uninsdeletekey
 
 [Code]
@@ -52,7 +52,7 @@ function GetSteamPath(Param: String): String;
 var
   Path: String;
 begin
-  if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App 322190', 'InstallLocation', Path) or
+  if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Steam App {#SteamAppId}', 'InstallLocation', Path) or
      RegQueryStringValue(HKEY_CURRENT_USER, 'Software\Valve\Steam', 'SteamPath', Path) then
   begin
     if Pos('SteamWorld Heist', Path) > 0 then
@@ -70,7 +70,6 @@ var
   OldVersion: String;
 begin
   Result := True;
-  // Перевіряємо, чи вже встановлена якась версія
   if RegQueryStringValue(HKCU, 'Software\{#AppPublisher}\{#AppName}', 'Version', OldVersion) then
   begin
     if OldVersion = '{#AppVersion}' then
@@ -81,10 +80,10 @@ begin
   end;
 end;
 
+// 3. Перевірка правильності папки
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
-  // Перевірка папки на етапі її вибору
   if CurPageID = wpSelectDir then
   begin
     if not FileExists(ExpandConstant('{app}\SteamWorldHeist.exe')) then
@@ -92,5 +91,22 @@ begin
       if MsgBox('У вказаній папці не знайдено SteamWorldHeist.exe.' #13#10 #13#10 'Ви впевнені, що хочете встановити переклад саме сюди?', mbConfirmation, MB_YESNO) = IDNO then
         Result := False;
     end;
+  end;
+end;
+
+// 4. ЛОГІКА ВИДАЛЕННЯ (Тільки текстове попередження)
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+begin
+  // Виконується після того, як файли перекладу були видалені
+  if CurUninstallStep = usPostUninstall then
+  begin
+    MsgBox('Українізатор успішно видалено.' #13#10#13#10 +
+           'УВАГА: Оскільки переклад замінював оригінальні файли гри, зараз у грі відсутні деякі важливі файли (гра не запуститься).' #13#10#13#10 +
+           'Щоб відновити оригінальну англійську версію, виконайте наступні дії:' #13#10 +
+           '1. Відкрийте Steam' #13#10 +
+           '2. Натисніть правою кнопкою миші на SteamWorld Heist' #13#10 +
+           '3. Оберіть "Властивості" -> "Встановлені файли"' #13#10 +
+           '4. Натисніть "Перевірити цілісність файлів гри"', 
+           mbInformation, MB_OK);
   end;
 end;
