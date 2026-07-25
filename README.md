@@ -1,51 +1,107 @@
-SteamWorld Heist — Ukrainian Localization (by EMP_UA)
+# SteamWorld Heist — Ukrainian Localization (by EMP_UA)
 
-This repository contains the technical source code and scripts I developed for the Ukrainian localization of SteamWorld Heist.
-
----
-
-## 🛡️ Technical Transparency (for Nexus Mods)
-
-To ensure the safety and transparency of my installers, I am providing the **Inno Setup script (`packexe.iss`)**. 
-- **Purpose:** Automates the deployment of localized assets to the game directory, specifically:
-  - Replacing the main text archive (`en.csv.z`).
-  - Deploying custom font atlases (`.png`) and generated font definitions (`.fnt`).
-  - Updating DLC content by replacing repacked archives (`.impak`).
-- **Security:** The installer performs file-copy operations within the game's folder. 
-- **Registry Use:** The installer creates a standard entry in **HKEY_CURRENT_USER** for two specific purposes:
-  1. **Uninstaller support:** To allow users to easily remove the localization via the Windows Control Panel.
-  2. **Version tracking:** To detect if version 0.50 is already installed and prevent duplicate installations or guide the user through a re-installation.
-- **Cleanup:** All registry entries and installed files are completely removed when the user runs the uninstaller. No global system settings, drivers, or security configurations are modified.
+**UA:** Цей репозиторій містить технічний вихідний код та скрипти, розроблені для української локалізації SteamWorld Heist.
+**EN:** This repository contains the technical source code and scripts developed for the Ukrainian localization of SteamWorld Heist.
 
 ---
 
-## 🧰 Third-party Tools & Credits
+## 🔡 Font Engineering Toolset / Інструментарій для роботи зі шрифтами (`SWH.FontTool`)
 
-This project stands on the shoulders of the modding community. I would like to acknowledge the following tools and researchers:
+**UA:** `SWH.FontTool` — набір C#-інструментів (Core / Analyzer / CLI) для впровадження повного українського алфавіту у власний бінарний формат шрифтів гри (`.fnt` + `.png`), з повністю новою геометрією для кожної літери замість запозичення пікселів чи форми з оригінальної кирилиці.
 
-* **[QuickBMS](https://github.com/LittleBigBug/QuickBMS):** The primary engine used for extracting and re-importing the game's `.z` text archives.
-* **Font Metrics Research:** Special thanks to **sb8gapi** and the **[Graj po Polsku](https://grajpopolsku.pl/)** community. Their technical analysis of the SteamWorld Heist `.fnt` structure provided the essential foundation for my custom C# font generation tools.
-* **Archive Logic:** Technical insights for handling `.z` and `.csv.z` files were sourced from the **Steam Community** (specifically modding discussions for *SteamWorld Quest*).
-* **[Inno Setup](https://jrsoftware.org/isinfo.php):** Used to create the professional installation package with integrated version detection and uninstaller support.
+**EN:** `SWH.FontTool` — a suite of C# tools (Core / Analyzer / CLI) for injecting the full Ukrainian alphabet into the game's proprietary binary font format (`.fnt` + `.png`), with fully new geometry for every letter instead of borrowing pixels or shapes from the original Cyrillic.
+
+### Можливості / Features
+
+- **UA:** Реверс-інжиніринг бінарного формату `.fnt` (магічний заголовок `bfnt`, автоматичне визначення розміру запису/stride) — без жодної документації від розробника, лише побайтовий аналіз. / **EN:** Reverse-engineered the binary `.fnt` format (magic header `bfnt`, automatic record-stride detection) — with no developer documentation, purely through byte-level analysis.
+- **UA:** Повне перепакування атласу: усі 66 українських літер отримують нову геометрію у свіжому просторі PNG (полотно зростає безпечно; `numChars` не змінюється — підтверджено емпірично, що рушій це толерує). / **EN:** Full atlas repack: all 66 Ukrainian letters get freshly generated geometry in newly added PNG space (the canvas grows safely; `numChars` never changes — empirically confirmed the engine tolerates this).
+- **UA:** Калібрування "від латиниці": базова лінія та висота тіла літери прив'язані до ОРИГІНАЛЬНОЇ латиниці шрифту (яка гарантовано коректна — англійська версія гри відвантажується й виглядає правильно), а НЕ до оригінальної кирилиці, яка подекуди сама була невідповідного розміру в тих самих файлах. / **EN:** Latin-first calibration: baseline and body-height are anchored to the font's ORIGINAL Latin glyphs (guaranteed correct — the English version ships and looks right), NOT to the original Cyrillic, which in some files was itself an inconsistent size.
+- **UA:** Індивідуальний, вимірюваний коефіцієнт трекінгу (XAdvance) для КОЖНОГО шрифту окремо — щільність міжлітерного інтервалу в оригіналі коливається від ~0.64 (сильно конденсовані шрифти) до ~1.0 (звичайний текст); універсальна формула тут не працює. / **EN:** A per-font, measured tracking (XAdvance) ratio — the original's inter-letter spacing density ranges from ~0.64 (heavily condensed fonts) to ~1.0 (body text); a single universal formula does not work here.
+- **UA:** Постійний діагностичний інструмент (`LatinReferenceDiagnostic`), що вимірює ПОВНУ латиницю (і `.fnt`-метрики, і фактичне піксельне чорнило з `.png`) кожного шрифту гри — еталонні дані, на основі яких калібрується кирилиця. / **EN:** A permanent diagnostic tool (`LatinReferenceDiagnostic`) that measures the ENTIRE Latin alphabet (both `.fnt` metrics and actual pixel ink from the `.png`) of every game font — the ground-truth data the Cyrillic is calibrated against.
+- **UA:** Безпечна система донорів для "неіснуючих" українських гліфів (Ё/Ъ/ё тощо відсутні в оригінальних шрифтах): 3-рівнева ієрархія (мертвий слот → неризикований екзотичний Latin Extended → Latin-1 в останню чергу), яка уникає символів, що активно використовуються іншими локалізаціями (Español/Français/Deutsch/Italiano) у тому ж файлі. / **EN:** A safe donor system for Ukrainian glyphs with no direct equivalent (Ё/Ъ/ё etc. are absent from the original fonts): a 3-tier hierarchy (dead slot → low-risk exotic Latin Extended → Latin-1 as a last resort) that avoids characters actively used by other localizations (Spanish/French/German/Italian) in the same file.
+
+### Чому не Oswald / Comfortaa? / Why not Oswald / Comfortaa?
+
+**UA:** Перші версії інструменту використовували шрифти Oswald-Bold і Comfortaa для рендеру нових літер. Обидва згодом замінені на родину **Fira Sans** (Carrois Type Design для Mozilla/Telefónica, кирилицю розширювали болгарські дизайнери Nikoltchev/Kateliev) — та сама відкрита ліцензія OFL, вага й пропорції підібрані виміряно (векторне порівняння товщини штриха), щоб замінити шрифт непомітно для ока. Детальніше, включно з причиною заміни, — у [`SWH.FontTool/FONT_APPROACH.md`](SWH.FontTool/FONT_APPROACH.md).
+
+<details>
+<summary>Технічна причина заміни / Technical reason for the swap (клікни, щоб розгорнути / click to expand)</summary>
+
+**UA:** Перевірка походження показала, що кириличне розширення ОБОХ початкових шрифтів (Google Fonts) виконувала одна й та сама студія — Cyreal (Олексій Ваняшин, росія). Оскільки ціль проєкту — україномовна локалізація без жодних запозичень з російськомовного технічного стеку, обидва шрифти замінено на Fira Sans, чию латиницю й кирилицю створювала одна команда (Carrois Type Design / болгарські дизайнери Nikoltchev-Kateliev) без стосунку до Cyreal.
+
+**EN:** A provenance check found that the Cyrillic extension of both original fonts (Google Fonts) was done by the same studio — Cyreal (Alexei Vanyashin, russia). Since the project's goal is a Ukrainian localization with no borrowed pieces from the Russian-language technical stack, both fonts were swapped for Fira Sans, whose Latin and Cyrillic were built by one team (Carrois Type Design / Bulgarian designers Nikoltchev-Kateliev) with no relation to Cyreal.
+
+</details>
+
+### Вимоги / Requirements
+
+**UA:** .NET 10 SDK. Інструмент не містить жодних файлів гри чи шрифтів — після клонування створіть (або дайте програмі створити) теки original-fonts/ і ttf-fonts/ поруч зі скомпільованим .exe та покладіть туди свої файли (оригінальні .png з гри та TTF-шрифти відповідно). Жодних хардкод-шляхів у коді немає.
+**EN:** .NET 10 SDK. The tool ships with no game files or fonts — after cloning, create (or let the app create) the original-fonts/ and ttf-fonts/ folders next to the compiled .exe and drop your own files there (the game's original .png and TTF fonts, respectively). There are no hardcoded paths anywhere in the code.
 
 ---
 
-### ⚙️ My Development Workflow
+## 🛡️ Technical Transparency (for Nexus Mods) / Технічна прозорість
 
-This project is a 100% solo technical and linguistic effort involving a complex development pipeline:
+**UA:** Для забезпечення безпеки та прозорості моїх інсталяторів я надаю скрипт **Inno Setup (`packexe.iss`)**.
+- **Призначення:** автоматизує розгортання локалізованих активів у теку гри, а саме: заміну основного текстового архіву (`en.csv.z`), розгортання власних атласів шрифтів (`.png`) та згенерованих визначень шрифтів (`.fnt`), оновлення вмісту DLC заміною перепакованих архівів (`.impak`).
+- **Безпека:** інсталятор виконує лише операції копіювання файлів у теці гри.
+- **Реєстр:** інсталятор створює стандартний запис у **HKEY_CURRENT_USER** лише для (1) підтримки деінсталятора через Панель керування Windows та (2) відстеження версії (щоб запобігти дублюванню встановлення).
+- **Очищення:** усі записи реєстру та встановлені файли повністю видаляються деінсталятором. Жодні глобальні системні налаштування, драйвери чи параметри безпеки не змінюються.
 
-* **Custom C# Engineering:** I developed a specialized suite of tools for the localization process, including a **Binary .fnt Master** for font reconstruction, an **.impak Repacker** for DLC assets, and a **Text Validator** for ensuring data integrity (preventing placeholder mismatches and engine crashes).
-* **Asset Management:** Utilized **QuickBMS** for decrypting and handling the game's `.z` archives, ensuring the seamless integration of localized `.csv` files.
-* **AI-Enhanced Localization:** I utilized a local instance of **TranslateGemma 12B** (via Ollama) for the initial translation pass. This was followed by extensive manual proofreading and contextual editing to match the *SteamWorld* universe's tone.
-* **Technical Optimization:** Leveraged **Google AI Studio (Gemini)** for refining C# logic and maintaining high-quality technical documentation.
+**EN:** To ensure the safety and transparency of my installers, I am providing the **Inno Setup script (`packexe.iss`)**.
+- **Purpose:** automates the deployment of localized assets to the game directory: replacing the main text archive (`en.csv.z`), deploying custom font atlases (`.png`) and generated font definitions (`.fnt`), updating DLC content by replacing repacked archives (`.impak`).
+- **Security:** the installer only performs file-copy operations within the game's folder.
+- **Registry Use:** the installer creates a standard entry in **HKEY_CURRENT_USER** solely for (1) uninstaller support via the Windows Control Panel and (2) version tracking (to prevent duplicate installations).
+- **Cleanup:** all registry entries and installed files are completely removed by the uninstaller. No global system settings, drivers, or security configurations are modified.
 
 ---
 
-### 📂 Repository Structure
+## 🧰 Third-party Tools & Credits / Подяки
 
-* **/installer** — Contains the **Inno Setup (`.iss`)** source script. This provides full transparency on how the localization is deployed and uninstalled.
-* **/tools** — My custom C# development suite:
-    * `FontGenMaster.cs` — The core engine for generating font atlases and binary metrics.
-    * `ImpakRepacker.cs` — Logic for DLC archive reconstruction and compression analysis.
-    * `TextValidator.cs` — Tool for merging translations and performing technical QA.
-    * `OllamaTranslatorClient.cs` — Automation client for the AI-assisted translation pass.
+- **[QuickBMS](https://github.com/LittleBigBug/QuickBMS):** **UA:** основний рушій для екстракції та повторного імпорту текстових архівів `.z` гри. **EN:** the primary engine used for extracting and re-importing the game's `.z` text archives.
+- **Font Metrics Research:** **UA:** особлива подяка **sb8gapi** та спільноті **[Graj po Polsku](https://grajpopolsku.pl/)** — їхній технічний аналіз структури `.fnt` SteamWorld Heist став основою для початкових версій моїх C#-інструментів. **EN:** special thanks to **sb8gapi** and the **[Graj po Polsku](https://grajpopolsku.pl/)** community — their technical analysis of the SteamWorld Heist `.fnt` structure was the foundation for the early versions of my C# tools.
+- **Archive Logic:** **UA:** технічні інсайти щодо `.z`/`.csv.z` файлів взято зі **Steam Community** (обговорення моддингу *SteamWorld Quest*). **EN:** technical insights for handling `.z`/`.csv.z` files were sourced from **Steam Community** modding discussions for *SteamWorld Quest*.
+- **[Inno Setup](https://jrsoftware.org/isinfo.php):** **UA:** використано для створення професійного пакета встановлення з визначенням версії та деінсталятором. **EN:** used to create the installation package with version detection and uninstaller support.
+- **[Fira Sans / Fira Sans Extra Condensed](https://github.com/bBoxType/FiraSans):** **UA:** шрифтова родина (Carrois Type Design для Mozilla/Telefónica, OFL), використана для рендеру всіх нових українських гліфів — з чітким, задокументованим авторством. **EN:** the font family (Carrois Type Design for Mozilla/Telefónica, OFL) used to render all new Ukrainian glyphs — with clean, documented authorship.
+- **[SixLabors.ImageSharp / ImageSharp.Drawing](https://github.com/SixLabors/ImageSharp):** **UA:** обробка PNG-атласів та рендер гліфів у `SWH.FontTool`. **EN:** PNG atlas processing and glyph rendering in `SWH.FontTool`.
+- **[Ollama](https://ollama.com/) / TranslateGemma 12B:** **UA:** локальний ШІ для початкового проходу перекладу (без хмарних API-ключів). **EN:** local AI used for the initial translation pass (no cloud API keys involved).
+- **AI coding assistant (Claude):** **UA:** частину коду в цьому репозиторії написано за допомогою AI-асистента — усі технічні рішення, вимірювання, перевірка в грі та фінальне ухвалення лишаються за автором. **EN:** portions of the code in this repository were drafted with the help of an AI coding assistant — all technical decisions, measurements, in-game verification, and final sign-off remain the author's own.
+
+---
+
+## ⚙️ Development Workflow / Робочий процес
+
+**UA:** Цей проєкт розроблений одноосібно — без команди чи співавторів — і охоплює складний конвеєр розробки:
+1. **Екстракція та пакування:** **[QuickBMS](https://github.com/LittleBigBug/QuickBMS)** для розшифрування архівів `.z`, власний **.impak Repacker** для збереження оригінальних рівнів стиснення при перепакуванні DLC.
+2. **AI-переклад:** локальний **TranslateGemma 12B** (через Ollama) для початкового проходу перекладу, з подальшим ретельним ручним редагуванням і адаптацією тону під всесвіт *SteamWorld*.
+3. **Технічна валідація:** `TextValidator` — злиття перевірених перекладів (TSV з Google Таблиць) назад у формат гри з автоматичною перевіркою тегів, змінних `%`, переносів рядка та випадкової кирилиці у службових змінних (падіння рушія).
+4. **Шрифтова інженерія:** `SWH.FontTool` — повне впровадження українського алфавіту в бінарні шрифти гри, детально описано вище й у [`SWH.FontTool/FONT_APPROACH.md`](SWH.FontTool/FONT_APPROACH.md).
+
+**EN:** This project was developed independently — no team or co-authors — and involves a complex development pipeline:
+1. **Extraction & Packaging:** **[QuickBMS](https://github.com/LittleBigBug/QuickBMS)** for decrypting `.z` archives, a custom **.impak Repacker** that preserves original per-file compression levels when rebuilding DLC archives.
+2. **AI-Enhanced Translation:** a local **TranslateGemma 12B** instance (via Ollama) for the initial translation pass, followed by extensive manual proofreading and tone adaptation to the *SteamWorld* universe.
+3. **Technical Validation:** `TextValidator` — merges reviewed translations (TSV from Google Sheets) back into the game's format with automatic checks for tags, `%` placeholders, newlines, and stray Cyrillic in engine variables (which crashes the engine).
+4. **Font Engineering:** `SWH.FontTool` — full Ukrainian alphabet injection into the game's binary fonts, detailed above and in [`SWH.FontTool/FONT_APPROACH.md`](SWH.FontTool/FONT_APPROACH.md).
+
+---
+
+## 📂 Repository Structure / Структура репозиторію
+
+- **`/installer`** — **UA:** вихідний скрипт **Inno Setup (`.iss`)** — повна прозорість того, як локалізація розгортається й видаляється. **EN:** the **Inno Setup (`.iss`)** source script — full transparency on how the localization is deployed and uninstalled.
+- **`/SWH.FontTool`** — **UA:** повний C#-набір (.NET 10) для шрифтової інженерії, три проєкти:
+  - `SWH.FontTool.Core` — **UA:** спільні моделі та конфігурація (парсинг бінарного `.fnt`, `GlyphRecord`, система донорів для відсутніх гліфів). **EN:** shared models and configuration (binary `.fnt` parsing, `GlyphRecord`, the donor system for missing glyphs).
+  - `SWH.FontTool.Analyzer` — **UA:** основний рушій: генерація нової геометрії, рендер PNG-атласу, діагностичні інструменти (в т.ч. `LatinReferenceDiagnostic`) та ізольовані експерименти, якими перевірялись припущення рушія гри (толерантність до більшого PNG, поведінка ID-полів тощо). **EN:** the core engine: new-geometry generation, PNG atlas rendering, diagnostic tools (including `LatinReferenceDiagnostic`), and isolated experiments used to validate assumptions about the game engine (tolerance for a larger PNG, ID-field behavior, etc).
+  - `SWH.FontTool.CLI` — **UA:** консольне меню — точка входу. **EN:** the console menu — the entry point.
+- **`/tools`** — **UA:** окремі одно-файлові C#-утиліти:
+  - `TextValidator.cs` — **UA:** злиття перекладів і технічна QA (детально описано в Development Workflow). **EN:** translation merging and technical QA (see Development Workflow above).
+  - `ImpakRepacker.cs` — **UA:** перепакування DLC-архівів зі збереженням оригінальних рівнів стиснення. **EN:** DLC archive repacking that preserves original compression levels.
+  - `OllamaTranslatorClient.cs` — **UA:** клієнт для автоматизації ШІ-перекладу через локальний Ollama. **EN:** automation client for the AI translation pass via local Ollama.
+- **`LICENSE`** — **UA:** ліцензія проєкту (MIT). **EN:** the project's license (MIT).
+
+---
+
+### ⚖️ Copyright Note / Примітка щодо авторських прав
+
+**UA:** Увесь код і скрипти в цьому репозиторії — авторська робота, надана виключно для некомерційного використання фанатами та для технічної прозорості перед майданчиками модів (напр. Nexus Mods). Оригінальні активи, тексти та бінарні формати гри належать розробнику SteamWorld Heist; цей репозиторій не містить жодних видобутих файлів гри.
+
+**EN:** All code and scripts in this repository are original work, provided solely for non-commercial fan use and for technical transparency toward mod platforms (e.g. Nexus Mods). The original assets, text, and binary formats belong to the developer of SteamWorld Heist; this repository contains no extracted game files.

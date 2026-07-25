@@ -1,3 +1,35 @@
+// =============================================================================
+// SteamWorld Heist — OllamaTranslatorClient.cs
+// Автор / Author: EMP_UA (https://github.com/EMP-UA)
+// Ліцензія / License: MIT
+// =============================================================================
+// UA: Клієнт для першого чорнового проходу перекладу через локальну модель
+//     Ollama ('translategemma:12b'). Це не заміна ручного редагування —
+//     чорновий переклад завжди проходить окрему ревізію (звідси REVIEW_*.tsv
+//     поруч з основним виводом).
+//     Ключові технічні риси:
+//     - Керування станом потоку, щоб Windows не заснула під час довгого
+//       пакетного завдання.
+//     - Захист тегів рушія гри регулярними виразами (щоб модель не
+//       пошкодила {теги}/<теги>/\n/[теги] під час перекладу).
+//     - Пост-обробка: чистка "галюцинацій" моделі та відновлення регістру.
+//     - Автоматична QA-перевірка: кириличні літери, властиві лише
+//       російській мові (ы, э, ъ, ё), явна різниця довжини, забагато
+//       латиниці в результаті.
+// EN: A client for the first draft translation pass via a local Ollama
+//     instance ('translategemma:12b'). This does not replace manual
+//     editing — the draft translation always goes through a separate
+//     review pass (hence REVIEW_*.tsv next to the main output).
+//     Key technical features:
+//     - Thread state management to prevent system sleep during long batch
+//       jobs.
+//     - Regex-based tag protection (prevents the model from corrupting game
+//       engine tags — {tags}/<tags>/\n/[tags] — during translation).
+//     - Post-processing: hallucination cleanup and case restoration.
+//     - Automated QA checks: letters unique to Russian (ы, э, ъ, ё), length
+//       mismatches, too much Latin script in the result.
+// =============================================================================
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,22 +41,12 @@ using System.Runtime.InteropServices;
 using System.Net.Http;
 using System.Text.Json;
 
-/* * SteamWorld Heist AI-Assisted Localization Client
- * Developed by EMP_UA (Yevhenii)
- * * This tool automates the initial translation pass using a local Ollama instance 
- * running the 'translategemma:12b' model. 
- * * Key Technical Features:
- * - Thread state management to prevent system sleep during long batch jobs.
- * - Regex-based tag protection (prevents AI from corrupting game engine tags).
- * - Post-processing: Hallucination cleaning and case restoration.
- * - Integrated QA: Automatic detection of character mismatches and length anomalies.
- */
-
 namespace SteamWorldUA_AITranslator
 {
     class Program
     {
-        // Prevent system from sleeping during long translation tasks
+        // UA: Не даємо Windows заснути під час довгого перекладу.
+        // EN: Prevent system from sleeping during long translation tasks.
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         static extern uint SetThreadExecutionState(uint esFlags);
         const uint ES_CONTINUOUS = 0x80000000;
@@ -51,11 +73,18 @@ namespace SteamWorldUA_AITranslator
                 return;
             }
 
-            // --- CONFIGURATION SECTION ---
-            string inDir = @"C:\Path\To\Original\CSV";
-            string outDir = @"C:\Path\To\Output\Translations";
+            // UA: --- НАЛАШТУВАННЯ --- Жодних хардкод-шляхів з локального
+            //     диска: відносні теки біля скомпільованого .exe, самі
+            //     створюються нижче. Поклади вихідні CSV у "original-csv" і
+            //     запусти.
+            // EN: --- CONFIGURATION SECTION --- No hardcoded personal paths:
+            //     relative folders next to the compiled .exe, auto-created
+            //     below. Drop your source CSVs into "original-csv" and run.
+            string inDir = "original-csv";
+            string outDir = "output";
             string[] dlcFiles = { "en_dlc01.csv", "en_dlc02.csv", "en_dlc03.csv" };
 
+            Directory.CreateDirectory(inDir);
             Directory.CreateDirectory(outDir);
 
             foreach (var file in dlcFiles)
@@ -68,6 +97,18 @@ namespace SteamWorldUA_AITranslator
             Console.ReadLine();
         }
 
+        /// <summary>
+        /// UA: Обробляє один CSV-файл рядок за рядком: захищає теги,
+        /// перекладає через Ollama, відновлює теги й регістр, рахує
+        /// QA-прапорці, пише основний вивід + окремий файл для ревізії.
+        /// Підтримує продовження з місця зупинки (startLine рахується з
+        /// уже наявного outputPath).
+        /// EN: Processes one CSV file line by line: protects tags,
+        /// translates via Ollama, restores tags and case, computes QA
+        /// flags, writes the main output plus a separate review file.
+        /// Supports resuming from where it left off (startLine is derived
+        /// from the existing outputPath).
+        /// </summary>
         static async Task ProcessFileAsync(string inDir, string outDir, string file)
         {
             string inputPath = Path.Combine(inDir, file);
@@ -116,35 +157,40 @@ namespace SteamWorldUA_AITranslator
 
                     try
                     {
-                        // 1. Tag Protection (Colors, Game Tags, Newlines)
+                        // UA: 1. Захист тегів (кольори, теги гри, переноси рядків)
+                        // EN: 1. Tag Protection (Colors, Game Tags, Newlines)
                         var tags = new List<string>();
                         string protectedText = Regex.Replace(englishText, @"(\{.*?\}|<.*?>|\\n|\[.*?\])", m => {
                             tags.Add(m.Value);
                             return $"[[{tags.Count - 1}]]";
                         });
 
-                        // 2. AI Translation
+                        // UA: 2. Переклад через AI
+                        // EN: 2. AI Translation
                         string translatedText = await SafeTranslateAsync(protectedText, comment, log);
                         translatedText = CleanHallucinations(translatedText);
                         translatedText = RestoreCase(englishText, translatedText);
 
-                        // Fix trailing periods if original didn't have them
+                        // UA: Прибираємо крапку в кінці, якщо в оригіналі її не було
+                        // EN: Fix trailing periods if original didn't have them
                         if (!englishText.Trim().EndsWith(".") && translatedText.EndsWith("."))
                         {
                             translatedText = translatedText.TrimEnd('.');
                         }
 
-                        // 3. Restore Tags
+                        // UA: 3. Повертаємо теги на місце
+                        // EN: 3. Restore Tags
                         for (int t = 0; t < tags.Count; t++)
                         {
                             translatedText = Regex.Replace(translatedText, $@"\[\[\s?{t}\s?\]\]", tags[t]);
                         }
 
-                        // 4. Automated QA Controls
+                        // UA: 4. Автоматичні QA-перевірки
+                        // EN: 4. Automated QA Controls
                         string qaFlags = "";
                         if (Regex.IsMatch(translatedText, "[ыэъёЫЭЪЁ]")) qaFlags += "[RUS] ";
                         if (englishText.Length > 5 && translatedText.Length > englishText.Length * 2.5) qaFlags += "[LEN] ";
-                        
+
                         int latinCount = translatedText.Count(c => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
                         if (translatedText.Length > 0 && (double)latinCount / translatedText.Length > 0.4) qaFlags += "[LAT] ";
 
@@ -154,7 +200,8 @@ namespace SteamWorldUA_AITranslator
                         sw.Flush();
                         swReview.Flush();
 
-                        // Progress logging (Shortened for brevity)
+                        // UA: Прогрес у консоль (скорочено)
+                        // EN: Progress logging (Shortened for brevity)
                         Console.WriteLine($"Progress: {i + 1}/{totalLines} ({(double)(i + 1) / totalLines * 100:F1}%) | ID: {id}");
                     }
                     catch (Exception ex)
@@ -166,6 +213,14 @@ namespace SteamWorldUA_AITranslator
             }
         }
 
+        /// <summary>
+        /// UA: Викликає локальний Ollama API. У разі будь-якої помилки
+        /// (сервер недоступний, невдалий парсинг) повертає оригінальний
+        /// англійський текст без змін — рядок ніколи не втрачається.
+        /// EN: Calls the local Ollama API. On any failure (server
+        /// unreachable, parsing error) returns the original English text
+        /// unchanged — a line is never lost.
+        /// </summary>
         static async Task<string> SafeTranslateAsync(string text, string context, StreamWriter log)
         {
             var requestBody = new
@@ -198,6 +253,12 @@ namespace SteamWorldUA_AITranslator
             catch { return text; }
         }
 
+        /// <summary>
+        /// UA: Прибирає типові вступні фрази-"галюцинації" моделі
+        /// ("переклад:", "ось переклад:" тощо) та зайві лапки.
+        /// EN: Strips typical model "hallucination" preambles
+        /// ("translation:", "here is the translation:" etc.) and stray quotes.
+        /// </summary>
         static string CleanHallucinations(string text)
         {
             string[] prefixes = { "переклад:", "translation:", "ось переклад:", "here is the translation:" };
@@ -208,6 +269,12 @@ namespace SteamWorldUA_AITranslator
             return text.Trim('\"');
         }
 
+        /// <summary>
+        /// UA: Відновлює регістр перекладу за зразком оригіналу
+        /// (ВСЕ ВЕЛИКИМИ / Перша велика).
+        /// EN: Restores the translation's case to match the original
+        /// (ALL CAPS / First letter capitalized).
+        /// </summary>
         static string RestoreCase(string original, string translated)
         {
             if (string.IsNullOrEmpty(original) || string.IsNullOrEmpty(translated)) return translated;

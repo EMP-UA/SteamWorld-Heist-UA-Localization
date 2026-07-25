@@ -1,16 +1,30 @@
+// =============================================================================
+// SteamWorld Heist — ImpakRepacker.cs (Smart Packer)
+// Автор / Author: EMP_UA (https://github.com/EMP-UA)
+// Ліцензія / License: MIT
+// =============================================================================
+// UA: Частина проєкту українізації SteamWorld Heist. Перепаковує локалізовані
+//     файли назад у .impak (DLC-архіви — насправді звичайний ZIP), зберігаючи
+//     ПОТОЧНИЙ рівень стиснення кожного файлу з оригінального архіву. Це
+//     важливо: якщо перепакувати все з однаковим (наприклад, максимальним)
+//     стисненням, рушій гри може не прочитати деякі файли правильно — звідси
+//     і "Smart" у назві: рівень стиснення підбирається евристично для
+//     КОЖНОГО файлу окремо, за зразком оригіналу.
+// EN: Part of the SteamWorld Heist Ukrainian localization project. Repacks
+//     localized files back into .impak (DLC archives — actually plain ZIP),
+//     preserving the ORIGINAL compression level for each file in the source
+//     archive. This matters: repacking everything with one uniform level
+//     (e.g. maximum) can make the game engine fail to read some files
+//     correctly — hence "Smart" in the name: the compression level is
+//     picked heuristically per file, matching the original.
+// =============================================================================
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
-
-/* * SteamWorld Heist Smart Packer
- * Developed by EMP_UA (Yevhenii)
- * * This tool is part of the Ukrainian Localization project for SteamWorld Heist.
- * It ensures that repacked .impak (DLC) files maintain the original compression 
- * levels for each file to prevent game crashes and visual artifacts.
- */
 
 namespace SteamWorldUA_SmartPacker
 {
@@ -21,11 +35,19 @@ namespace SteamWorldUA_SmartPacker
             Console.OutputEncoding = Encoding.UTF8;
             Console.WriteLine("=== SteamWorld Heist Smart Packer | by EMP_UA ===");
 
-            // --- Configuration Section ---
-            // Replace these placeholders with your actual local paths
-            string ogDlcDir = @"C:\Path\To\Original\Game\dlc";
-            string sourceBaseDir = @"C:\Path\To\Your\Localized\Folders";
-            string outputBaseDir = @"C:\Path\To\Output\Pack";
+            // UA: --- НАЛАШТУВАННЯ --- Жодних хардкод-шляхів з локального
+            //     диска: відносні теки біля скомпільованого .exe, самі
+            //     створюються нижче. Поклади свої файли сюди.
+            // EN: --- Configuration Section --- No hardcoded personal paths:
+            //     relative folders next to the compiled .exe, auto-created
+            //     below. Drop your files in.
+            string ogDlcDir = "original-dlc";
+            string sourceBaseDir = "localized";
+            string outputBaseDir = "output";
+
+            Directory.CreateDirectory(ogDlcDir);
+            Directory.CreateDirectory(sourceBaseDir);
+            Directory.CreateDirectory(outputBaseDir);
 
             string[] dlcNames = { "data01", "data02", "data03" };
 
@@ -42,6 +64,7 @@ namespace SteamWorldUA_SmartPacker
                 else
                 {
                     Console.WriteLine($"[!] Skipping {name}: original file or source folder not found.");
+                    Console.WriteLine($"    Expected: {originalImpak}  and  {sourceFolder}\\");
                 }
             }
 
@@ -50,20 +73,27 @@ namespace SteamWorldUA_SmartPacker
         }
 
         /// <summary>
-        /// Analyzes the original .impak file and creates a new one using the same compression levels.
+        /// UA: Аналізує оригінальний .impak і створює новий, використовуючи
+        /// для кожного файлу той самий рівень стиснення, що й в оригіналі.
+        /// EN: Analyzes the original .impak file and creates a new one using
+        /// the same compression level for each file as in the original.
         /// </summary>
         static void ProcessSmartPacking(string originalPath, string sourceDir, string outputPath)
         {
             Console.WriteLine($"\n[>] Analyzing and Packing: {Path.GetFileName(outputPath)}");
 
-            // 1. Analyze the original archive's compression methods
+            // UA: 1. Аналізуємо методи стиснення оригінального архіву
+            // EN: 1. Analyze the original archive's compression methods
             var compressionMap = new Dictionary<string, CompressionLevel>(StringComparer.OrdinalIgnoreCase);
 
             using (ZipArchive archive = ZipFile.OpenRead(originalPath))
             {
                 foreach (var entry in archive.Entries)
                 {
-                    // Heuristic check: if compressed size equals original size, it's likely NoCompression (Store)
+                    // UA: Евристика: якщо стиснутий розмір дорівнює
+                    //     оригінальному — це, найімовірніше, NoCompression (Store)
+                    // EN: Heuristic check: if compressed size equals original
+                    //     size, it's likely NoCompression (Store)
                     if (entry.CompressedLength == entry.Length)
                         compressionMap[entry.FullName] = CompressionLevel.NoCompression;
                     else
@@ -71,7 +101,8 @@ namespace SteamWorldUA_SmartPacker
                 }
             }
 
-            // 2. Create the new archive with synchronized compression levels
+            // UA: 2. Створюємо новий архів із синхронізованими рівнями стиснення
+            // EN: 2. Create the new archive with synchronized compression levels
             if (File.Exists(outputPath)) File.Delete(outputPath);
 
             using (ZipArchive newArchive = ZipFile.Open(outputPath, ZipArchiveMode.Create))
@@ -79,7 +110,8 @@ namespace SteamWorldUA_SmartPacker
                 var files = Directory.GetFiles(sourceDir, "*.*", SearchOption.AllDirectories);
                 foreach (var file in files)
                 {
-                    // Get relative path for the archive structure
+                    // UA: Відносний шлях для структури архіву
+                    // EN: Get relative path for the archive structure
                     string relativePath = file.Substring(sourceDir.Length + 1).Replace('\\', '/');
 
                     CompressionLevel levelToUse = CompressionLevel.Optimal;

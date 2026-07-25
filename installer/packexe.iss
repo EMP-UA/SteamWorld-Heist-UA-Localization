@@ -1,5 +1,5 @@
 #define AppName "SteamWorld Heist Українізатор"
-#define AppVersion "0.51"
+#define AppVersion "1.00"
 #define AppPublisher "EMP_UA"
 #define AppURL "https://t.me/EMP_UA"
 #define AppId "{{A8D7E3B2-F7C1-4B9A-9D8E-5C1B3A4D5E6F}" ; Унікальний ID для реєстру Windows
@@ -39,8 +39,8 @@ ukrainian.SelectDirLabel3=Інсталятор встановить україн
 
 [Files]
 ; Шляхи до файлів перекладу
-Source: "SteamWorld Heist 051\Bundle\*"; DestDir: "{app}\Bundle"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "SteamWorld Heist 051\DLC\*"; DestDir: "{app}\DLC"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "SteamWorld Heist 100\Bundle\*"; DestDir: "{app}\Bundle"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "SteamWorld Heist 100\DLC\*"; DestDir: "{app}\DLC"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Registry]
 ; Записуємо версію в реєстр користувача

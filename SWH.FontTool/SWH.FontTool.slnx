@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="SWH.FontTool.Analyzer/SWH.FontTool.Analyzer.csproj" />
+  <Project Path="SWH.FontTool.CLI/SWH.FontTool.CLI.csproj" />
+  <Project Path="SWH.FontTool.Core/SWH.FontTool.Core.csproj" />
+</Solution>
