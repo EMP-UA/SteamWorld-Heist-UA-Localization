@@ -10,3 +10,8 @@
 
 output/
 reports/
+original/
+review/
+logs/
+locEditor_ui_settings.json
+publish/
