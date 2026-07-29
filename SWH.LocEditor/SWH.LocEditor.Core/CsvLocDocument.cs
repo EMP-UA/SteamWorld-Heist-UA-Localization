@@ -264,58 +264,6 @@ public class CsvLocDocument
     }
 
     /// <summary>
-    /// UA: Зливає переклад з ІНШОГО файлу такого ж формату, що й оригінал
-    ///     (Key\tТекст\tКоментар — той самий парсер, що й Parse), а НЕ з
-    ///     review TSV. Призначення: коли робочий review TSV (Google
-    ///     Таблиці) застарів відносно вже випущеного перекладу — наприклад,
-    ///     гра оновилась і видала НОВИЙ оригінальний en.csv.z з новими/
-    ///     зміненими ключами. Тоді можна відкрити цей новий оригінал, а
-    ///     потім "злити" сюди СТАРИЙ вже перекладений en.csv/en.csv.z (той,
-    ///     що раніше зберегла ця ж програма), щоб одразу підтягнути готові
-    ///     переклади для збіжних ключів — без статусу вичитки, бо в такому
-    ///     файлі його просто немає (ReviewNote не чіпається). Технічні
-    ///     рядки НЕ перезаписуються — вони й так не потребують перекладу.
-    ///     RecomputeDuplicates() викликається автоматично. Повертає
-    ///     кількість зіставлених рядків.
-    /// EN: Merges translations from ANOTHER file in the SAME format as the
-    ///     original (Key\tText\tComment — the same parser as Parse), not
-    ///     from a review TSV. Purpose: when the working review TSV (Google
-    ///     Sheets) has gone stale relative to an already-shipped
-    ///     translation — e.g. the game updated and shipped a NEW original
-    ///     en.csv.z with new/changed keys. In that case, open the new
-    ///     original, then "merge" the OLD already-translated en.csv/
-    ///     en.csv.z (previously saved by this same app) here to instantly
-    ///     carry over finished translations for matching keys — with no
-    ///     review status, since that kind of file simply doesn't have one
-    ///     (ReviewNote is left untouched). Technical rows are NOT
-    ///     overwritten — they don't need translation anyway.
-    ///     RecomputeDuplicates() is called automatically. Returns the
-    ///     number of matched rows.
-    /// </summary>
-    public int MergeTranslatedCsv(byte[] csvBytes)
-    {
-        var translatedDoc = Parse(csvBytes);
-        var translations = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var e in translatedDoc.Entries)
-        {
-            if (e.IsStructural) continue;
-            translations[e.Key] = e.Original;
-        }
-
-        int merged = 0;
-        foreach (var entry in Entries)
-        {
-            if (entry.IsStructural || entry.IsTechnical) continue;
-            if (!translations.TryGetValue(entry.Key, out var translatedText)) continue;
-
-            entry.Translated = translatedText;
-            merged++;
-        }
-        RecomputeDuplicates();
-        return merged;
-    }
-
-    /// <summary>
     /// UA: Ключі оригіналу, яких не було знайдено при останньому злитті
     ///     review — тобто ще не перекладені/не звірені рядки.
     /// EN: Original keys not found during the last review merge — i.e. rows

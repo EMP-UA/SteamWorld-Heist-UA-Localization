@@ -172,9 +172,6 @@
                     Style="{StaticResource DarkBtn}" Margin="0,0,6,0" Click="OpenOriginalButton_Click"/>
             <Button x:Name="MergeReviewButton" Content="📋 Злити review / Merge Review"
                     Style="{StaticResource DarkBtn}" Margin="0,0,6,0" IsEnabled="False" Click="MergeReviewButton_Click"/>
-            <Button x:Name="MergeTranslatedCsvButton" Content="🔀 Злити перекладений CSV / Merge Translated CSV"
-                    Style="{StaticResource DarkBtn}" Margin="0,0,6,0" IsEnabled="False" Click="MergeTranslatedCsvButton_Click"
-                    ToolTip="UA: Підтягнути переклад із раніше збереженого en.csv/en.csv.z (напр. після оновлення гри з новим оригіналом) — без статусу вичитки, бо такий файл його не містить / EN: Pull translations from a previously saved en.csv/en.csv.z (e.g. after a game update ships a new original) — with no review status, since that kind of file doesn't have one"/>
             <Button x:Name="ExportTsvButton" Content="📤 Експорт TSV / Export TSV"
                     Style="{StaticResource DarkBtn}" Margin="0,0,6,0" IsEnabled="False" Click="ExportTsvButton_Click"
                     ToolTip="UA: Вивантажити ключ/оригінал/переклад у TSV для ручного редагування в Excel/Google Таблицях / EN: Export key/original/translation to TSV for manual editing in Excel/Google Sheets"/>

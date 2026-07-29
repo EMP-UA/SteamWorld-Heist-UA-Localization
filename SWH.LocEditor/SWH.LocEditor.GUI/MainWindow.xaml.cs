@@ -294,7 +294,6 @@ public partial class MainWindow : Window
                 _entries.Add(new LocEntryViewModel(entry));
 
             MergeReviewButton.IsEnabled = true;
-            MergeTranslatedCsvButton.IsEnabled = true;
             ExportTsvButton.IsEnabled = true;
             SaveButton.IsEnabled = true;
 
@@ -358,65 +357,6 @@ public partial class MainWindow : Window
             SimpleLogger.Error($"Merge review failed: {dlg.FileName}", ex);
             MessageBox.Show(
                 $"UA: Помилка читання review / EN: Review read error:\n\n{ex.Message}",
-                "Помилка / Error", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-    }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // ЗЛИТТЯ ПЕРЕКЛАДЕНОГО CSV / MERGING A TRANSLATED CSV
-    // UA: На відміну від "Злити review" (читає TSV з Google Таблиць), ця
-    //     кнопка читає файл ТОГО Ж формату, що й оригінал (.csv/.csv.z) —
-    //     тобто раніше збережений перекладений en.csv.z. Потрібно, коли
-    //     робочий review TSV застарів відносно вже випущеного перекладу
-    //     (напр. гра оновилась і видала новий оригінал з новими ключами):
-    //     відкриваємо новий оригінал, тоді "зливаємо" сюди старий
-    //     перекладений файл, щоб одразу підтягнути готові переклади для
-    //     збіжних ключів. Статус вичитки НЕ підтягується — такий файл
-    //     його просто не містить.
-    // EN: Unlike "Merge Review" (reads a TSV from Google Sheets), this
-    //     button reads a file in the SAME format as the original
-    //     (.csv/.csv.z) — i.e. a previously saved translated en.csv.z.
-    //     Needed when the working review TSV has gone stale relative to an
-    //     already-shipped translation (e.g. the game updated and shipped a
-    //     new original with new keys): open the new original, then "merge"
-    //     the old translated file here to instantly carry over finished
-    //     translations for matching keys. Review status is NOT carried
-    //     over — that kind of file simply doesn't have one.
-    // ══════════════════════════════════════════════════════════════════════
-
-    private void MergeTranslatedCsvButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (_document == null) return;
-
-        var dlg = new OpenFileDialog
-        {
-            InitialDirectory = Path.GetFullPath(OutputDir),
-            Filter = "UA: Мовні файли гри / EN: Game language files|*.csv;*.csv.z|" +
-                     "Стиснуті / Compressed (*.csv.z)|*.csv.z|" +
-                     "Звичайний CSV / Plain CSV (*.csv)|*.csv|" +
-                     "Усі файли / All files|*.*",
-            Title = "🔀 UA: Злити перекладений CSV / EN: Merge translated CSV"
-        };
-        if (dlg.ShowDialog() != true) return;
-
-        SimpleLogger.Info($"Merging translated CSV: {dlg.FileName}");
-        try
-        {
-            byte[] rawCsv = LanguageArchive.LoadRaw(dlg.FileName);
-            int merged = _document.MergeTranslatedCsv(rawCsv);
-
-            foreach (var vm in _entries) vm.RefreshFromCore();
-
-            RefreshView();
-            ShowStatus($"✓ UA: Підтягнуто {merged} перекладів із «{Path.GetFileName(dlg.FileName)}» / " +
-                       $"EN: Pulled in {merged} translations from «{Path.GetFileName(dlg.FileName)}»");
-            SimpleLogger.Info($"Translated CSV merged OK: {dlg.FileName} · matched={merged}");
-        }
-        catch (Exception ex)
-        {
-            SimpleLogger.Error($"Merge translated CSV failed: {dlg.FileName}", ex);
-            MessageBox.Show(
-                $"UA: Помилка читання файлу / EN: File read error:\n\n{ex.Message}",
                 "Помилка / Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -526,10 +466,43 @@ public partial class MainWindow : Window
         //     files are never accidentally overwritten.
         Directory.CreateDirectory(OutputDir);
 
+        // UA: Ім'я за замовчуванням = основа ОРИГІНАЛУ + мітка дати й часу,
+        //     напр. «en 250726 1920.csv.z». Дві причини (обидві — реальні
+        //     проблеми, а не косметика):
+        //       1) Сліпе перезаписування: без мітки кожне збереження
+        //          пропонує те саме ім'я, і попередня версія перекладу
+        //          мовчки затирається. З міткою кожен зріз лишається.
+        //       2) Плутанина файлів: en.csv.z оригіналу гри й en.csv.z із
+        //          перекладом виглядають ІДЕНТИЧНО за іменем, а всередині
+        //          відрізняються кардинально (у перекладеному колонка тексту
+        //          вже українська — англійського першоджерела в ньому
+        //          НЕМАЄ). Переплутати їх при відкритті = працювати з
+        //          перекладом як з "оригіналом". Мітка часу робить різницю
+        //          видимою одразу в діалозі відкриття.
+        // EN: Default name = the ORIGINAL's base + a date/time stamp, e.g.
+        //     "en 250726 1920.csv.z". Two reasons (both real problems, not
+        //     cosmetics):
+        //       1) Blind overwrites: without a stamp every save proposes the
+        //          same name, silently clobbering the previous translation.
+        //          With it, every snapshot survives.
+        //       2) File mix-ups: the game's original en.csv.z and a
+        //          translated en.csv.z look IDENTICAL by name, while
+        //          differing fundamentally inside (in the translated one the
+        //          text column is already Ukrainian — the English source is
+        //          NOT in it any more). Mixing them up on open means working
+        //          on a translation as if it were the "original". The
+        //          timestamp makes the difference visible right in the open
+        //          dialog.
+        string originalBase = Path.GetFileNameWithoutExtension(
+            Path.GetFileNameWithoutExtension(_originalPath));
+        string stamp = DateTime.Now.ToString("yyMMdd HHmm");
+        string stampedBase = $"{originalBase} {stamp}";
+        string csvExtension = LanguageArchive.IsCompressedArchive(_originalPath) ? ".csv.z" : ".csv";
+
         var dlg = new SaveFileDialog
         {
             InitialDirectory = Path.GetFullPath(OutputDir),
-            FileName = Path.GetFileName(_originalPath),
+            FileName = stampedBase + csvExtension,
             Filter = LanguageArchive.IsCompressedArchive(_originalPath)
                 ? "Стиснутий архів гри / Compressed game archive (*.csv.z)|*.csv.z"
                 : "CSV (*.csv)|*.csv",
@@ -541,10 +514,63 @@ public partial class MainWindow : Window
         {
             byte[] rawCsv = _document.ToCsvBytes();
             LanguageArchive.SaveRaw(dlg.FileName, rawCsv);
+            SimpleLogger.Info($"Saved OK: {dlg.FileName}");
+
+            // UA: Поруч із файлом для гри одразу пишемо парний РОБОЧИЙ TSV у
+            //     review/ — і цим замикається цикл роботи над перекладом.
+            //
+            //     Річ у тім, що .csv.z для гри — це ГЛУХИЙ КУТ як робочий
+            //     файл: у ньому колонка тексту вже замінена перекладом, тож
+            //     англійського першоджерела в ньому не лишається взагалі.
+            //     Відкривши його наступного разу, побачиш переклад у ролі
+            //     "оригіналу" й не матимеш із чим його звіряти. TSV же
+            //     тримає ID, англійський оригінал, переклад, коментар
+            //     розробника й статус вичитки в ОКРЕМИХ колонках — тобто
+            //     повний зріз стану роботи.
+            //
+            //     Тому наступна сесія завжди починається однаково:
+            //       ① «Відкрити оригінал» — чистий en.csv.z гри (єдине
+            //          джерело англійського тексту);
+            //       ② «Злити review» — цей TSV (переклад + вичитка).
+            //     Ніякого окремого шляху злиття для перекладеного .csv.z не
+            //     потрібно, і Google Таблиці для цього теж не потрібні —
+            //     програма сама створює цей файл.
+            //
+            //     Ім'я парне до .csv.z саме через ту саму мітку часу, тож
+            //     видно, який TSV якому збереженню відповідає.
+            // EN: Alongside the file for the game we immediately write the
+            //     paired WORKING TSV into review/ — and that closes the
+            //     translation workflow loop.
+            //
+            //     The thing is, the game's .csv.z is a DEAD END as a working
+            //     file: its text column has already been replaced by the
+            //     translation, so the English source isn't in it at all any
+            //     more. Open it next time and you'll see the translation
+            //     posing as the "original", with nothing to check it
+            //     against. The TSV, by contrast, keeps the ID, English
+            //     original, translation, developer comment and review status
+            //     in SEPARATE columns — a complete snapshot of the work.
+            //
+            //     So the next session always starts the same way:
+            //       ① "Open original" — the game's pristine en.csv.z (the
+            //          single source of English text);
+            //       ② "Merge review" — this TSV (translation + review).
+            //     No separate merge path for a translated .csv.z is needed,
+            //     and Google Sheets isn't needed either — the program
+            //     creates this file itself.
+            //
+            //     The name is paired to the .csv.z via that same timestamp,
+            //     so it's obvious which TSV belongs to which save.
+            Directory.CreateDirectory(ReviewDir);
+            string workingTsvName = Path.GetFileNameWithoutExtension(
+                Path.GetFileNameWithoutExtension(dlg.FileName)) + ".tsv";
+            string workingTsvPath = Path.Combine(ReviewDir, workingTsvName);
+            File.WriteAllBytes(workingTsvPath, _document.ToReviewTsvBytes());
+            SimpleLogger.Info($"Paired working TSV written: {workingTsvPath}");
 
             ShowStatus($"✓ UA: Збережено (з самоперевіркою) / EN: Saved (self-verified) · " +
-                       $"«{Path.GetFileName(dlg.FileName)}»");
-            SimpleLogger.Info($"Saved OK: {dlg.FileName}");
+                       $"«{Path.GetFileName(dlg.FileName)}» + робочий TSV / working TSV: " +
+                       $"«{ReviewDir}/{workingTsvName}»");
         }
         catch (Exception ex)
         {
