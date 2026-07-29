@@ -46,7 +46,7 @@
 
 ## 📝 Localization Editor GUI / Редактор локалізації з графічним інтерфейсом (`SWH.LocEditor`)
 
-![SWH.LocEditor](https://img.shields.io/badge/SWH.LocEditor-v1.0-8A46C1)
+![SWH.LocEditor](https://img.shields.io/badge/SWH.LocEditor-v1.0.1-8A46C1)
 
 **UA:** `SWH.LocEditor` — WPF-застосунок (розділений на `SWH.LocEditor.Core` — чиста логіка без залежності від GUI, і `SWH.LocEditor.GUI` — WPF-інтерфейс) для роботи з мовним CSV гри напряму: без проміжних кроків через QuickBMS, з живою валідацією перекладу по клітинці й одним екраном для всього процесу вичитки.
 
