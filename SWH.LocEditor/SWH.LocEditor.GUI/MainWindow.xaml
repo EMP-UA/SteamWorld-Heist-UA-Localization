@@ -1,0 +1,562 @@
+<Window x:Class="SWH.LocEditor.GUI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        Title="⚡ SWH.LocEditor — EMP_UA"
+        Height="800" Width="1340"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource BgBase}">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- UA: Готові позначки для колонки «Вичитка» — випадають у списку,
+             але поле РЕДАГОВАНЕ (ComboBox IsEditable), тож замість позначки
+             можна вписати довільний коментар до конкретного рядка.
+             EN: Ready-made markers for the "Review" column — offered in a
+             dropdown, but the field is EDITABLE (ComboBox IsEditable), so a
+             free-form per-row comment can be typed instead of a marker. -->
+        <x:Array x:Key="ReviewPresets" Type="{x:Type sys:String}">
+            <sys:String>+</sys:String>
+            <sys:String>-</sys:String>
+            <sys:String>+/-</sys:String>
+        </x:Array>
+
+        <!-- ══════════════════════════════════════════════════════════════
+             UA: Кольорове кодування РЯДКА ЦІЛКОМ. ВАЖЛИВО: раніше DataGrid
+             мав власні RowBackground/AlternatingRowBackground, які
+             конкурували з цими Setter'ами — фактично видимою лишалась
+             тільки рамка технічних рядків (фідбек: "фактично у нас
+             виділяються тільки технічні рядки"). Тепер RowBackground/
+             AlternatingRowBackground прибрані з DataGrid — ЄДИНЕ джерело
+             кольору рядка це цей стиль. Кожен статус тепер має і заливку,
+             і тонку рамку в тон (не лише технічний) — для однакової
+             видимості всіх статусів.
+             EN: Color-codes the WHOLE ROW. IMPORTANT: the DataGrid used to
+             also have its own RowBackground/AlternatingRowBackground, which
+             competed with these Setters — in practice only the technical
+             row's border was visible (feedback: "in practice only Technical
+             rows get highlighted"). RowBackground/AlternatingRowBackground
+             have now been removed from the DataGrid — this style is the
+             ONLY source of row color. Every status now gets both a fill AND
+             a thin matching border (not just Technical) — for equal
+             visibility across all statuses.
+             ══════════════════════════════════════════════════════════════ -->
+        <Style x:Key="RowStyle" TargetType="DataGridRow">
+            <Setter Property="Background"      Value="{DynamicResource RowUntranslatedBg}"/>
+            <Setter Property="BorderBrush"     Value="{DynamicResource StatusRed}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsTranslated}" Value="True">
+                    <Setter Property="Background"  Value="{DynamicResource RowTranslatedBg}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource StatusGreen}"/>
+                </DataTrigger>
+                <!-- UA: Duplicate-попередження ПЕРЕД Issue в порядку тригерів
+                     (нижчий пріоритет) — Issue головніший маркер і має
+                     ПЕРЕМАГАТИ, якщо обидва застосовні до рядка одночасно
+                     (раніше було навпаки, тому дублікат+проблемний рядок
+                     показувався жовтим, приховуючи важливіше попередження).
+                     EN: Duplicate-warning BEFORE Issue in trigger order
+                     (lower priority) — Issue is the more important marker
+                     and must WIN if both apply to a row at once (previously
+                     reversed, so a duplicate+issue row showed yellow, hiding
+                     the more important warning). -->
+                <DataTrigger Binding="{Binding HasInconsistentDuplicateTranslation}" Value="True">
+                    <Setter Property="Background"  Value="{DynamicResource RowDupWarn}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasValidationIssue}" Value="True">
+                    <Setter Property="Background"  Value="{DynamicResource RowIssue}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource StatusAmber}"/>
+                </DataTrigger>
+                <!-- UA: Технічний рядок (без тексту для перекладу) — СВІТЛО-
+                     БЛАКИТНА заливка, БЕЗ окремої рамки (BorderThickness=0
+                     явно перекриває базову червону рамку) — раніше поєднання
+                     темно-бірюзового фону+рамки+Opacity 0.75 виглядало
+                     "токсично" і псувало читабельність Ключа/Оригіналу.
+                     Тепер тільки м'яка заливка, як просив користувач.
+                     EN: Technical row (no text to translate) — LIGHT SKY-
+                     BLUE fill, NO separate border (BorderThickness=0
+                     explicitly overrides the base red border) — previously
+                     the dark-teal background+border+Opacity 0.75 combo
+                     looked "toxic" and hurt the readability of Key/Original.
+                     Now it's just a soft fill, as the user asked. -->
+                <DataTrigger Binding="{Binding IsTechnical}" Value="True">
+                    <Setter Property="Background"      Value="{DynamicResource RowTechnicalBg}"/>
+                    <Setter Property="BorderThickness"  Value="0"/>
+                </DataTrigger>
+                <!-- UA: Змінено — найвищий пріоритет (останній тригер).
+                     EN: Modified — highest priority (last trigger). -->
+                <DataTrigger Binding="{Binding IsModified}" Value="True">
+                    <Setter Property="Background"  Value="{DynamicResource RowModifiedBg}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource FlagYellow}"/>
+                </DataTrigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource RowHov}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ══════════════════════════════════════════════════════════════
+             ШАПКА / БРЕНДУВАННЯ / HEADER / BRANDING
+             ══════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="0" Margin="0,0,0,10" Padding="14,8"
+                Background="{DynamicResource BgSurface}"
+                BorderBrush="{DynamicResource BdAcc}" BorderThickness="0,0,0,2">
+            <DockPanel LastChildFill="False">
+                <!-- UA: Розміри шапки збільшено (було 15/13/9) — фідбек:
+                     "текст шапки де бренд і меню налаштувань досі малуватий".
+                     EN: Header sizes increased (were 15/13/9) — feedback:
+                     "the header text with the brand and settings menu is
+                     still too small". -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" DockPanel.Dock="Left">
+                    <TextBlock Text="⚡" FontSize="20"
+                               Foreground="{DynamicResource Accent}" VerticalAlignment="Center"/>
+                    <TextBlock Text=" SWH.LocEditor" FontSize="17" FontWeight="SemiBold" FontFamily="Consolas"
+                               Foreground="{DynamicResource Accent}" VerticalAlignment="Center"/>
+                    <TextBlock Text=" EMP_UA" FontSize="11" FontWeight="Bold" FontFamily="Consolas"
+                               Foreground="{DynamicResource FlagYellow}"
+                               VerticalAlignment="Bottom" Margin="3,0,0,4"/>
+                    <TextBlock Text="SteamWorld Heist Localization Editor"
+                               FontSize="{DynamicResource FontUI}"
+                               Foreground="{DynamicResource TextSec}"
+                               Margin="14,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <ScrollViewer DockPanel.Dock="Right" HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Background="{DynamicResource BgCard}"
+                                BorderBrush="{DynamicResource BdNorm}" BorderThickness="1"
+                                CornerRadius="5" Padding="2" Margin="0,0,6,0"
+                                VerticalAlignment="Center"
+                                ToolTip="UA: Розмір тексту таблиці (10–20pt). Шрифт кнопок не змінюється. / EN: Table text size (10–20pt). Button font stays fixed.">
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="A−" Style="{StaticResource SmallBtn}"
+                                        Click="FontDecrease_Click" BorderThickness="0" Padding="9,4"/>
+                                <TextBlock x:Name="FontSizeLabel" Width="26" TextAlignment="Center"
+                                           FontSize="{DynamicResource FontUI}"
+                                           VerticalAlignment="Center" Foreground="{DynamicResource TextSec}"
+                                           Margin="3,0"/>
+                                <Button Content="A+" Style="{StaticResource SmallBtn}"
+                                        Click="FontIncrease_Click" BorderThickness="0" Padding="9,4"/>
+                            </StackPanel>
+                        </Border>
+                        <Button x:Name="ThemeToggleBtn" Style="{StaticResource SmallBtn}" Margin="0,0,6,0"
+                                ToolTip="UA: Перемкнути темну/світлу тему / EN: Toggle dark/light theme"
+                                Click="ThemeToggle_Click"/>
+                        <Button Content="⚙ Налаштування / Settings" Style="{StaticResource SmallBtn}"
+                                ToolTip="UA: Інтервал автозбереження / EN: Autosave interval"
+                                Click="SettingsButton_Click"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════════════════════
+             ПАНЕЛЬ ІНСТРУМЕНТІВ / TOOLBAR
+             ══════════════════════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+            <Button x:Name="OpenOriginalButton" Content="📂 Відкрити оригінал / Open Original"
+                    Style="{StaticResource DarkBtn}" Margin="0,0,6,0" Click="OpenOriginalButton_Click"/>
+            <Button x:Name="MergeReviewButton" Content="📋 Злити review / Merge Review"
+                    Style="{StaticResource DarkBtn}" Margin="0,0,6,0" IsEnabled="False" Click="MergeReviewButton_Click"/>
+            <Button x:Name="ExportTsvButton" Content="📤 Експорт TSV / Export TSV"
+                    Style="{StaticResource DarkBtn}" Margin="0,0,6,0" IsEnabled="False" Click="ExportTsvButton_Click"
+                    ToolTip="UA: Вивантажити ключ/оригінал/переклад у TSV для ручного редагування в Excel/Google Таблицях / EN: Export key/original/translation to TSV for manual editing in Excel/Google Sheets"/>
+            <Button x:Name="SaveButton" Content="💾 Зберегти / Save"
+                    Style="{StaticResource SafeBtn}" Margin="0,0,6,0" IsEnabled="False" Click="SaveButton_Click"/>
+            <Separator Margin="6,0"/>
+            <TextBlock Text="🔎" VerticalAlignment="Center" Margin="6,0,4,0"
+                       Foreground="{DynamicResource TextSec}"/>
+            <TextBox x:Name="SearchBox" Width="260" VerticalContentAlignment="Center"
+                     Style="{StaticResource DarkInput}"
+                     Tag="Ключ · оригінал · переклад / Key · original · translation"
+                     TextChanged="SearchBox_TextChanged"/>
+        </StackPanel>
+
+        <!-- ══════════════════════════════════════════════════════════════
+             ФІЛЬТРИ / FILTERS
+             ══════════════════════════════════════════════════════════════ -->
+        <!-- UA: WrapPanel замість StackPanel — фільтри більше не вилазять
+             за межі вікна: коли не вистачає ширини, ЦІЛА кнопка (не частина
+             слова) переходить на наступний рядок.
+             EN: WrapPanel instead of StackPanel — filters no longer run off
+             the window: when width runs out, the WHOLE button (not part of
+             a word) wraps to the next line. -->
+        <WrapPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,8">
+            <Button x:Name="FilterAll" Content="Усі / All" Tag="all"
+                    Style="{StaticResource FilterBtn}" Margin="0,0,4,4" Click="FilterButton_Click"/>
+            <Button x:Name="FilterUn" Content="Без перекладу / Untranslated" Tag="un"
+                    Style="{StaticResource FilterBtn}" Margin="0,0,4,4" Click="FilterButton_Click"/>
+            <Button x:Name="FilterTr" Content="Перекладено / Translated" Tag="tr"
+                    Style="{StaticResource FilterBtn}" Margin="0,0,4,4" Click="FilterButton_Click"/>
+            <Button x:Name="FilterTechnical" Content="⚙ Технічні / Technical" Tag="technical"
+                    Style="{StaticResource FilterBtn}" Margin="0,0,4,4" Click="FilterButton_Click"
+                    ToolTip="UA: Рядки, де оригінал (за вирахуванням тегів {…} і плейсхолдерів %1%) не містить жодної літери — лише цифри/символи/розділові знаки. Не перекладати! / EN: Rows where the original (after stripping {…} tags and %1% placeholders) contains no letters at all — only digits/symbols/punctuation. Do not translate!"/>
+            <Button x:Name="FilterDup" Content="⧉ Дублікати / Duplicates" Tag="dup"
+                    Style="{StaticResource FilterBtn}" Margin="0,0,4,4" Click="FilterButton_Click"
+                    ToolTip="UA: Рядки з ідентичним оригінальним текстом під різними ключами / EN: Rows sharing identical original text under different keys"/>
+            <Button x:Name="FilterIssues" Content="⚠ Проблемні / Issues" Tag="issues"
+                    Style="{StaticResource FilterBtn}" Margin="0,0,4,4" Click="FilterButton_Click"/>
+            <Button x:Name="FilterMod" Content="✎ Змінено / Modified" Tag="mod"
+                    Style="{StaticResource FilterBtn}" Margin="0,0,4,4" Click="FilterButton_Click"/>
+            <Button x:Name="FilterReviewed" Content="✓ Пройшли вичитку / Reviewed" Tag="reviewed"
+                    Style="{StaticResource FilterBtn}" Margin="0,0,4,4" Click="FilterButton_Click"/>
+            <Button x:Name="FilterNotReviewed" Content="✗ Без вичитки / Not reviewed" Tag="notreviewed"
+                    Style="{StaticResource FilterBtn}" Margin="0,0,4,4" Click="FilterButton_Click"/>
+        </WrapPanel>
+
+        <!-- ══════════════════════════════════════════════════════════════
+             ЛЕГЕНДА / LEGEND
+             UA: Пояснення кольорового кодування рядків таблиці — той самий
+             набір, що й у EaWLocalizationTool.GUI (Legend bar).
+             EN: Explains the grid's row color-coding — the same set as in
+             EaWLocalizationTool.GUI (Legend bar).
+             ══════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="3" Margin="0,0,0,8" Padding="10,4"
+                Background="{DynamicResource BgBase}"
+                BorderBrush="{DynamicResource BdNorm}" BorderThickness="1" CornerRadius="4">
+            <!-- UA: Суцільні кольорові кружечки (не квадратики з рамкою) —
+                 як в EaW: яскравий насичений колір, помітний одразу, без
+                 потреби придивлятись до тонкої рамки.
+                 EN: Solid colored dots (not bordered squares) — like EaW:
+                 a bright saturated color, visible at a glance, no need to
+                 squint at a thin border. -->
+            <WrapPanel Orientation="Horizontal">
+                <Ellipse Width="12" Height="12" Fill="{DynamicResource StatusRed}" VerticalAlignment="Center"/>
+                <TextBlock Text=" Без перекладу / Untranslated" FontSize="{DynamicResource FontUI}"
+                           Foreground="{DynamicResource TextDim}" Margin="4,0,12,0"/>
+                <Ellipse Width="12" Height="12" Fill="{DynamicResource StatusGreen}" VerticalAlignment="Center"/>
+                <TextBlock Text=" Перекладено / Translated" FontSize="{DynamicResource FontUI}"
+                           Foreground="{DynamicResource TextDim}" Margin="4,0,12,0"/>
+                <Ellipse Width="12" Height="12" Fill="{DynamicResource FlagYellow}" VerticalAlignment="Center"/>
+                <TextBlock Text=" Змінено / Modified" FontSize="{DynamicResource FontUI}"
+                           Foreground="{DynamicResource TextDim}" Margin="4,0,12,0"/>
+                <!-- UA: Issue — окремий, ГОЛОВНІШИЙ колір (StatusAmber), щоб
+                     не змішуватись візуально з "Без перекладу" (StatusRed).
+                     EN: Issue — a separate, MORE IMPORTANT color
+                     (StatusAmber), so it doesn't visually blend with
+                     "Untranslated" (StatusRed). -->
+                <Ellipse Width="12" Height="12" Fill="{DynamicResource StatusAmber}" VerticalAlignment="Center"/>
+                <TextBlock Text=" ⚠ Проблема / Issue" FontSize="{DynamicResource FontUI}"
+                           Foreground="{DynamicResource TextDim}" Margin="4,0,12,0"/>
+                <!-- UA: Технічний — світло-блакитний (не токсичний бірюзовий),
+                     колір залежить від теми (TechnicalFg).
+                     EN: Technical — light sky-blue (not the toxic teal),
+                     theme-dependent color (TechnicalFg). -->
+                <Ellipse Width="12" Height="12" Fill="{DynamicResource TechnicalFg}" VerticalAlignment="Center"/>
+                <TextBlock Text=" ⚙ Технічний — не перекладати / Technical — do not translate" FontSize="{DynamicResource FontUI}"
+                           Foreground="{DynamicResource TextDim}" Margin="4,0,0,0"/>
+            </WrapPanel>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════════════════════
+             ТАБЛИЦЯ / GRID
+             ══════════════════════════════════════════════════════════════ -->
+        <!-- UA: НЕМАЄ RowBackground/AlternatingRowBackground — вони
+             конкурували з RowStyle і глушили заливку статусів (див.
+             коментар над RowStyle вище). RowStyle — єдине джерело кольору
+             рядка.
+             EN: NO RowBackground/AlternatingRowBackground — they competed
+             with RowStyle and muted the status fills (see the comment
+             above RowStyle). RowStyle is the single source of row color. -->
+        <DataGrid x:Name="MainGrid" Grid.Row="4"
+                  AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
+                  RowStyle="{StaticResource RowStyle}"
+                  SelectionUnit="FullRow" SelectionMode="Single"
+                  FontSize="{DynamicResource FontBase}"
+                  Background="{DynamicResource BgSurface}"
+                  Foreground="{DynamicResource TextPrim}"
+                  BorderBrush="{DynamicResource BdNorm}"
+                  GridLinesVisibility="Horizontal"
+                  HorizontalGridLinesBrush="{DynamicResource GridLine}"
+                  CellEditEnding="MainGrid_CellEditEnding">
+            <DataGrid.ColumnHeaderStyle>
+                <Style TargetType="DataGridColumnHeader">
+                    <Setter Property="Background"      Value="{DynamicResource HdrBg}"/>
+                    <Setter Property="Foreground"      Value="{DynamicResource TextSec}"/>
+                    <Setter Property="FontSize"        Value="{DynamicResource FontTiny}"/>
+                    <Setter Property="FontWeight"      Value="SemiBold"/>
+                    <Setter Property="Padding"         Value="8,6"/>
+                    <Setter Property="BorderBrush"     Value="{DynamicResource BdAcc}"/>
+                    <Setter Property="BorderThickness" Value="0,0,0,2"/>
+                </Style>
+            </DataGrid.ColumnHeaderStyle>
+
+            <!-- UA: CellStyle не був заданий узагалі — тому виділений рядок
+                 фарбувався СИСТЕМНИМ синім кольором Windows, який ігнорує
+                 нашу палітру. Саме через нього колонка "Коментар розробника"
+                 (тьмяний TextDim) ставала нечитабельною на виділенні в обох
+                 темах. Тепер виділення використовує RowSel із палітри, а
+                 текст — контрастний TextPrim. За зразком
+                 EaWLocalizationTool.GUI (DataGrid.CellStyle).
+                 EN: CellStyle was never defined — so a selected row got
+                 painted with Windows' SYSTEM blue, which ignores our
+                 palette. That's what made the "Dev Comment" column (dim
+                 TextDim) unreadable when selected, in both themes.
+                 Selection now uses RowSel from the palette, with contrasty
+                 TextPrim text. Modeled on EaWLocalizationTool.GUI
+                 (DataGrid.CellStyle). -->
+            <DataGrid.CellStyle>
+                <Style TargetType="DataGridCell">
+                    <Setter Property="BorderThickness"  Value="0"/>
+                    <Setter Property="Background"       Value="Transparent"/>
+                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                    <Setter Property="Padding"          Value="4,3"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource RowSel}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrim}"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.CellStyle>
+
+            <!-- ══════════════════════════════════════════════════════════
+                 UA: ШИРИНА КОЛОНОК. Width="SizeToHeader" — ширина за
+                 замовчуванням рівно під текст заголовка, тож жоден
+                 заголовок більше не обрізається («Коментар розробника / D…»,
+                 «⧉ Дублі /»). Користувач і далі може вручну стиснути чи
+                 розширити будь-яку колонку — SizeToHeader задає лише
+                 ПОЧАТКОВУ ширину, не фіксує її.
+                 Два винятки, свідомі:
+                 • «Ключ» — має SizeToHeader, але MinWidth=180: заголовок
+                   короткий, а ключі довгі (objective_kill_vectron_6_optional),
+                   тож чиста ширина заголовка різала б головний ідентифікатор.
+                 • «Оригінал»/«Переклад» — лишаються Width="*", бо містять
+                   цілі речення й мають розтягуватись на вільне місце;
+                   MinWidth не дає їм стиснутись вужче за заголовок.
+                 EN: COLUMN WIDTHS. Width="SizeToHeader" — the default width
+                 fits the header text exactly, so no header is ever
+                 truncated any more ("Коментар розробника / D…", "⧉ Дублі /").
+                 The user can still manually shrink or widen any column —
+                 SizeToHeader only sets the INITIAL width, it doesn't lock it.
+                 Two deliberate exceptions:
+                 • "Key" — uses SizeToHeader but MinWidth=180: its header is
+                   short while keys are long
+                   (objective_kill_vectron_6_optional), so a pure header
+                   width would cut off the primary identifier.
+                 • "Original"/"Translated" — stay Width="*", since they hold
+                   whole sentences and should flex into the free space;
+                   MinWidth keeps them from shrinking below their header.
+                 ══════════════════════════════════════════════════════════ -->
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Ключ / Key" Binding="{Binding Key}" IsReadOnly="True"
+                                     Width="SizeToHeader" MinWidth="180"/>
+                <DataGridTextColumn Header="Оригінал / Original" Binding="{Binding Original}" IsReadOnly="True"
+                                     Width="*" MinWidth="200">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextWrapping" Value="Wrap"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <!-- UA: Коментар розробника — 3-тя колонка оригінального CSV
+                     гри (LocEntry.Comment), контекст для перекладача (в яких
+                     умовах/де показується рядок), read-only, ніколи не
+                     потрапляє в переклад.
+                     EN: Developer comment — the game's original CSV's 3rd
+                     column (LocEntry.Comment), context for the translator
+                     (where/under what conditions the row is shown),
+                     read-only, never ends up in the translation. -->
+                <DataGridTextColumn Header="Коментар розробника / Dev Comment" Binding="{Binding Comment}" IsReadOnly="True" Width="SizeToHeader">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="TextWrapping" Value="Wrap"/>
+                            <Setter Property="FontStyle" Value="Italic"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
+                            <Style.Triggers>
+                                <!-- UA: Явний Setter Foreground у цьому стилі
+                                     перекриває успадкування кольору від
+                                     DataGridCell, тому на виділенні тьмяний
+                                     TextDim лишався б нечитабельним навіть
+                                     після виправлення CellStyle. Тригер по
+                                     IsSelected рядка-предка повертає
+                                     контрастний TextPrim.
+                                     EN: The explicit Foreground setter in this
+                                     style overrides color inheritance from
+                                     DataGridCell, so on selection the dim
+                                     TextDim would stay unreadable even after
+                                     the CellStyle fix. A trigger on the
+                                     ancestor row's IsSelected restores the
+                                     contrasty TextPrim. -->
+                                <DataTrigger Value="True"
+                                             Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=DataGridRow}}">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextPrim}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTemplateColumn Header="⧉ Дублі / Dup." Width="SizeToHeader">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding DuplicateGroupSize}"
+                                       ToolTip="UA: Скільки рядків мають ідентичний оригінал (технічні рядки не рахуються) / EN: How many rows share this exact original (technical rows are not counted)"
+                                       Visibility="{Binding IsDuplicateOriginal, Converter={StaticResource BoolToVis}}"
+                                       HorizontalAlignment="Center" FontWeight="Bold"
+                                       Foreground="{DynamicResource Accent}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <!-- UA: "М'який блок" для технічних рядків — 1:1 з
+                     EaWLocalizationTool.GUI: у режимі ПЕРЕГЛЯДУ (CellTemplate)
+                     технічний рядок показує фіксовану примітку замість
+                     сирого значення Translated (яке для таких рядків часто
+                     просто дублює Original і нічого корисного не каже). При
+                     РЕДАГУВАННІ (CellEditingTemplate, подвійний клік) видно
+                     справжнє значення — примітка лише "приховує" відображення,
+                     не сам текст.
+                     EN: A "soft block" for technical rows — ported 1:1 from
+                     EaWLocalizationTool.GUI: in VIEW mode (CellTemplate) a
+                     technical row shows a fixed note instead of the raw
+                     Translated value (which for such rows often just
+                     duplicates Original and says nothing useful). When
+                     EDITING (CellEditingTemplate, double-click) the real
+                     value is shown — the note only "hides" the display, not
+                     the underlying text. -->
+                <DataGridTemplateColumn Header="Переклад / Translated" Width="*" MinWidth="200">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <!-- UA: КРИТИЧНО — Text задано САМЕ як Setter у стилі,
+                                 а НЕ як локальний атрибут Text="{Binding ...}"
+                                 на самому TextBlock. У WPF локальне значення
+                                 властивості має ВИЩИЙ пріоритет за будь-який
+                                 Setter зі стилю (включно з DataTrigger), тому
+                                 попередня версія НЕ працювала: тригер
+                                 спрацьовував, але його Setter для Text програвав
+                                 локальній прив'язці. Симптом був однозначний —
+                                 FontStyle/Foreground (їх локально не задавали)
+                                 застосовувались (текст ставав курсивним
+                                 блакитним), а сам текст лишався сирим значенням
+                                 перекладу. Саме так це зроблено в
+                                 EaWLocalizationTool.GUI.
+                                 EN: CRITICAL — Text is set AS A Setter inside the
+                                 style, NOT as a local Text="{Binding ...}"
+                                 attribute on the TextBlock itself. In WPF a local
+                                 property value has HIGHER precedence than any
+                                 style Setter (including from a DataTrigger), so
+                                 the previous version did NOT work: the trigger
+                                 fired, but its Text setter lost to the local
+                                 binding. The symptom was unmistakable —
+                                 FontStyle/Foreground (never set locally) DID
+                                 apply (text turned italic light-blue), while the
+                                 text itself stayed the raw translation value.
+                                 This is exactly how EaWLocalizationTool.GUI does it. -->
+                            <TextBlock TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="{Binding Translated}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsTechnical}" Value="True">
+                                                <Setter Property="Text" Value="⚙ UA: Технічний — не перекладати! / EN: Technical — do not translate!"/>
+                                                <Setter Property="FontStyle" Value="Italic"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource TechnicalFg}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding Translated, UpdateSourceTrigger=PropertyChanged}"
+                                     TextWrapping="Wrap" AcceptsReturn="True"
+                                     Background="Transparent" BorderThickness="0"
+                                     Foreground="{DynamicResource TextPrim}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
+                <!-- UA: «Вичитка» — РЕДАГОВАНА колонка (подвійний клік), бо це
+                     робочий параметр, який проставляється саме під час роботи
+                     з програмою, а не лише імпортується з review. У режимі
+                     редагування — ComboBox з IsEditable="True": можна обрати
+                     готову позначку (+, -, +/-) зі списку АБО вписати
+                     довільний коментар до конкретного рядка. Значення
+                     потрапляє у вихід через «Експорт TSV» (5-та колонка); у
+                     CSV гри воно не зберігається взагалі.
+                     EN: "Review" is an EDITABLE column (double-click), since
+                     it's a working field filled in while using the app, not
+                     merely imported from the review file. In edit mode — a
+                     ComboBox with IsEditable="True": pick a ready-made marker
+                     (+, -, +/-) from the list OR type a free-form per-row
+                     comment. The value leaves the app via "Export TSV" (5th
+                     column); it is never stored in the game's CSV. -->
+                <DataGridTemplateColumn Header="Вичитка / Review" SortMemberPath="ReviewNote" Width="SizeToHeader">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding ReviewNote}" TextWrapping="Wrap"
+                                       ToolTip="UA: Подвійний клік — обрати позначку (+, -, +/-) або вписати власний коментар до рядка / EN: Double-click — pick a marker (+, -, +/-) or type your own per-row comment"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                    <DataGridTemplateColumn.CellEditingTemplate>
+                        <DataTemplate>
+                            <ComboBox IsEditable="True"
+                                      ItemsSource="{StaticResource ReviewPresets}"
+                                      Text="{Binding ReviewNote, UpdateSourceTrigger=PropertyChanged}"
+                                      FontSize="{DynamicResource FontBase}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellEditingTemplate>
+                </DataGridTemplateColumn>
+                <!-- UA: SortMemberPath вказує на ЧИСЛОВИЙ LengthDeltaPercent,
+                     а не на текст ValidationWarning — клік по заголовку
+                     сортує за СЕРЙОЗНІСТЮ довжини (% від'ємний = коротший,
+                     додатний = довший), а не за алфавітом рядка попередження.
+                     EN: SortMemberPath points at the NUMERIC LengthDeltaPercent,
+                     not the ValidationWarning text — clicking the header
+                     sorts by length SEVERITY (negative % = shorter, positive
+                     = longer), not alphabetically by the warning string. -->
+                <DataGridTextColumn Header="Попередження / Warning" Binding="{Binding ValidationWarning}"
+                                     SortMemberPath="LengthDeltaPercent" IsReadOnly="True" Width="SizeToHeader">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="ToolTip" Value="UA: Сортування за цією колонкою впорядковує за відносною різницею довжини (%), а не за текстом / EN: Sorting this column orders by the relative length difference (%), not by the text"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+            </DataGrid.Columns>
+
+            <DataGrid.RowHeaderTemplate>
+                <DataTemplate/>
+            </DataGrid.RowHeaderTemplate>
+
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="⧉ Застосувати переклад до всіх дублікатів / Apply translation to all duplicates"
+                              Click="CtxApplyToDuplicates_Click"/>
+                    <MenuItem Header="🔑 Копіювати ключ / Copy Key" Click="CtxCopyKey_Click"/>
+                    <MenuItem Header="📋 Копіювати оригінал / Copy original" Click="CtxCopyOriginal_Click"/>
+                    <!-- UA: не всі, хто перевіряє переклад, знають англійську —
+                         копіювання коментаря розробника окремо дозволяє
+                         вставити його в перекладач, не чіпаючи текст оригіналу.
+                         EN: not everyone reviewing the translation knows
+                         English — copying the developer comment separately
+                         lets it be pasted into a translator without touching
+                         the original text. -->
+                    <MenuItem Header="💬 Копіювати коментар розробника / Copy developer comment" Click="CtxCopyDevComment_Click"/>
+                    <MenuItem Header="📝 Вставити оригінал як переклад / Paste original as translation" Click="CtxPasteOriginalAsTranslation_Click"/>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+        </DataGrid>
+
+        <!-- ══════════════════════════════════════════════════════════════
+             РЯДОК СТАНУ / STATUS BAR
+             ══════════════════════════════════════════════════════════════ -->
+        <TextBlock x:Name="StatusText" Grid.Row="5" Margin="0,8,0,0" FontStyle="Italic"
+                   FontSize="{DynamicResource FontUI}"
+                   Foreground="{DynamicResource TextSec}"/>
+    </Grid>
+</Window>

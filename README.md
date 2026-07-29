@@ -40,6 +40,30 @@
 
 ---
 
+## 📝 Localization Editor GUI / Редактор локалізації з графічним інтерфейсом (`SWH.LocEditor`)
+
+**UA:** `SWH.LocEditor` — WPF-застосунок (розділений на `SWH.LocEditor.Core` — чиста логіка без залежності від GUI, і `SWH.LocEditor.GUI` — WPF-інтерфейс) для роботи з мовним CSV гри напряму: без проміжних кроків через QuickBMS, з живою валідацією перекладу по клітинці й одним екраном для всього процесу вичитки.
+
+**EN:** `SWH.LocEditor` — a WPF application (split into `SWH.LocEditor.Core` — pure logic with no GUI dependency, and `SWH.LocEditor.GUI` — the WPF interface) for working with the game's language CSV directly: no intermediate QuickBMS steps, live per-cell translation validation, and a single screen for the whole proofreading workflow.
+
+### Можливості / Features
+
+- **UA:** Читає `.csv.z` напряму (розпаковує в пам'яті через `SWH.LocEditor.Core`, без зовнішніх утиліт) або звичайний `.csv`; зберігає назад у той самий формат, з якого відкрито. / **EN:** Reads `.csv.z` directly (decompressed in-memory via `SWH.LocEditor.Core`, no external utilities) or a plain `.csv`; saves back in whatever format it was opened from.
+- **UA:** Автоматичне визначення "технічних" рядків — оригінал без жодної літери (лише теги/плейсхолдери) АБО коментар розробника прямо каже "do not translate"/"don't translate" — такі рядки виключені з "Без перекладу" й підрахунку дублікатів, і показують м'яку примітку замість тексту для перекладу. / **EN:** Automatic detection of "technical" rows — an original with no actual letters (just tags/placeholders) OR a developer comment explicitly saying "do not translate"/"don't translate" — such rows are excluded from "Untranslated" and duplicate counting, and show a soft note instead of translatable text.
+- **UA:** Живі перевірки перекладу під час редагування: кирилиця у службовій змінній (`%д` замість `%d` — падіння рушія), незбалансовані теги, та попередження про підозріло довший/коротший за оригінал переклад (пороги підібрані під природну довшість української мови, а не задають хибних спрацювань на кожному рядку). / **EN:** Live translation checks while editing: Cyrillic inside an engine variable (`%д` instead of `%d` — crashes the engine), unbalanced tags, and warnings for a translation suspiciously longer/shorter than the original (thresholds tuned for Ukrainian's natural length expansion, not false-triggering on every row).
+- **UA:** Виявлення дублікатів оригіналу (однаковий текст під різними ключами) з одним кліком розповсюдження перекладу на всю групу, і окремим маркером, якщо дублікати вже розійшлися в перекладі. / **EN:** Duplicate-original detection (identical text under different keys) with a one-click propagate-to-group action, plus a separate marker if duplicates have already drifted out of sync in translation.
+- **UA:** Колонка "Вичитка" — редагована: приймає готові позначки (`+`, `-`, `+/-`) або довільний коментар до рядка; автозбереження тихо пише робочий TSV (лише ті колонки, якими володіє програма — див. нижче) у `review/`, якщо є незбережена робота. / **EN:** An editable "Review" column — accepts ready-made markers (`+`, `-`, `+/-`) or a free-form per-row comment; autosave silently writes the working TSV (only the columns the program owns — see below) into `review/` whenever there's unsaved work.
+- **UA:** Чітке розмежування джерел даних review-таблиці: ключ/оригінал/коментар розробника завжди беруться з оригінального CSV гри, а не з review; дві останні колонки Google-таблиці (побажання щодо перекладу, версія/прогрес вичитки) призначені виключно для людей-рецензентів і програма їх ніколи не читає, не зберігає і не перезаписує. / **EN:** A clear separation of the review table's data sources: the key/original/developer comment always come from the game's original CSV, never from review; the Google Sheet's last two columns (translation suggestions, review version/progress) are for human reviewers only, and the program never reads, stores, or overwrites them.
+- **UA:** Темна/світла тема, масштаб шрифту, фільтри за статусом (Без перекладу / Перекладено / Технічні / Дублікати / Проблемні / Змінено / Пройшли вичитку / Без вичитки) з живими лічильниками. / **EN:** Dark/light theme, font-size scaling, status filters (Untranslated / Translated / Technical / Duplicates / Issues / Modified / Reviewed / Not reviewed) with live counters.
+- **UA:** Просте файлове логування (`logs/`) ключових операцій і необроблених винятків — для діагностики проблем без потреби відтворювати їх при мені. / **EN:** Simple file logging (`logs/`) of key operations and unhandled exceptions — for troubleshooting without needing to reproduce a problem live.
+
+### Вимоги / Requirements
+
+**UA:** .NET (WPF, Windows) SDK відповідно до `SWH.LocEditor.GUI.csproj`. Автоматично створює теки `original/`, `review/`, `output/` поруч зі скомпільованим .exe (можна або покласти файли туди заздалегідь, або обрати їх вручну через діалог) — жодних хардкод-шляхів у коді немає.
+**EN:** .NET (WPF, Windows) SDK per `SWH.LocEditor.GUI.csproj`. Automatically creates `original/`, `review/`, `output/` folders next to the compiled .exe (files can either be dropped in ahead of time or picked manually via a dialog) — there are no hardcoded paths anywhere in the code.
+
+---
+
 ## 🛡️ Technical Transparency (for Nexus Mods) / Технічна прозорість
 
 **UA:** Для забезпечення безпеки та прозорості моїх інсталяторів я надаю скрипт **Inno Setup (`packexe.iss`)**.
@@ -92,6 +116,9 @@
   - `SWH.FontTool.Core` — **UA:** спільні моделі та конфігурація (парсинг бінарного `.fnt`, `GlyphRecord`, система донорів для відсутніх гліфів). **EN:** shared models and configuration (binary `.fnt` parsing, `GlyphRecord`, the donor system for missing glyphs).
   - `SWH.FontTool.Analyzer` — **UA:** основний рушій: генерація нової геометрії, рендер PNG-атласу, діагностичні інструменти (в т.ч. `LatinReferenceDiagnostic`) та ізольовані експерименти, якими перевірялись припущення рушія гри (толерантність до більшого PNG, поведінка ID-полів тощо). **EN:** the core engine: new-geometry generation, PNG atlas rendering, diagnostic tools (including `LatinReferenceDiagnostic`), and isolated experiments used to validate assumptions about the game engine (tolerance for a larger PNG, ID-field behavior, etc).
   - `SWH.FontTool.CLI` — **UA:** консольне меню — точка входу. **EN:** the console menu — the entry point.
+- **`/SWH.LocEditor`** — **UA:** WPF-редактор локалізації з графічним інтерфейсом, два проєкти:
+  - `SWH.LocEditor.Core` — **UA:** чиста логіка без залежності від GUI: парсинг `.csv`/`.csv.z`, злиття review-TSV, виявлення технічних/дубльованих рядків, валідація перекладу. **EN:** pure GUI-independent logic: `.csv`/`.csv.z` parsing, review-TSV merging, technical/duplicate row detection, translation validation.
+  - `SWH.LocEditor.GUI` — **UA:** WPF-інтерфейс: тема, фільтри, живе редагування по клітинці, автозбереження, логування. **EN:** the WPF interface: theming, filters, live per-cell editing, autosave, logging.
 - **`/tools`** — **UA:** окремі одно-файлові C#-утиліти:
   - `TextValidator.cs` — **UA:** злиття перекладів і технічна QA (детально описано в Development Workflow). **EN:** translation merging and technical QA (see Development Workflow above).
   - `ImpakRepacker.cs` — **UA:** перепакування DLC-архівів зі збереженням оригінальних рівнів стиснення. **EN:** DLC archive repacking that preserves original compression levels.

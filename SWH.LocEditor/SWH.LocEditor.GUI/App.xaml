@@ -1,0 +1,198 @@
+<Application x:Class="SWH.LocEditor.GUI.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             СТИЛІ КНОПОК / BUTTON STYLES
+             UA: Перенесено 1:1 з EaWLocalizationTool.GUI/App.xaml — та сама
+                 форма (заокруглені Border+ContentPresenter, а не типовий
+                 плаский хром WPF-кнопки), той самий hover/disabled-стан. Це
+                 не косметика заради косметики: користувач явно попросив
+                 звірити з референс-проєктом ("уважно подивись як це було в
+                 gui з dat editor star wars empire at war"), і саме
+                 відсутність цих шаблонів (раніше — один плаский стиль
+                 "ChromeButton" без ControlTemplate) робила інтерфейс
+                 "мілкуватим".
+             EN: Ported 1:1 from EaWLocalizationTool.GUI/App.xaml — the same
+                 shape (rounded Border+ContentPresenter, not the default flat
+                 WPF button chrome), the same hover/disabled states. Not
+                 cosmetics for its own sake — the user explicitly asked to
+                 match the reference project ("carefully look at how this was
+                 done in the EaW DAT editor GUI"), and the absence of these
+                 templates (previously a single flat "ChromeButton" style with
+                 no ControlTemplate) is what made the interface feel "shallow".
+             ═══════════════════════════════════════════════════════════════════ -->
+
+        <!-- Базова темна кнопка / Base dark button -->
+        <Style x:Key="DarkBtn" TargetType="Button">
+            <Setter Property="Background"       Value="{DynamicResource BgCard}"/>
+            <Setter Property="Foreground"       Value="{DynamicResource TextPrim}"/>
+            <Setter Property="BorderBrush"      Value="{DynamicResource BdAcc}"/>
+            <Setter Property="BorderThickness"  Value="1"/>
+            <Setter Property="Padding"          Value="10,5"/>
+            <Setter Property="FontSize"         Value="{DynamicResource FontUI}"/>
+            <Setter Property="Cursor"           Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background"  Value="{DynamicResource BgCardHov}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.3"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Акцент (фіолетовий) / Primary (purple) -->
+        <Style x:Key="PrimaryBtn" TargetType="Button" BasedOn="{StaticResource DarkBtn}">
+            <Setter Property="Background"  Value="{DynamicResource AccentDark}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+            <Setter Property="FontWeight"  Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource Accent}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.3"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Безпечне збереження (зелена рамка) / Safe save (green border) -->
+        <!-- UA: У SWH.LocEditor немає окремого кольору "SafeColor" (як в EaW) —
+             використовуємо StatusGreen, він уже є в палітрі ThemeManager.
+             EN: SWH.LocEditor has no separate "SafeColor" (like EaW) —
+             reuses StatusGreen, already present in ThemeManager's palette. -->
+        <Style x:Key="SafeBtn" TargetType="Button" BasedOn="{StaticResource DarkBtn}">
+            <Setter Property="Foreground"  Value="{DynamicResource StatusGreen}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource StatusGreen}"/>
+            <Setter Property="FontWeight"  Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource StatusGreen}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource BgBase}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.3"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Фільтр (тулбар) / Filter (toolbar)
+             UA: Padding збільшено (було 9,4) — за фідбеком про
+             нечитабельні/дрібні фільтри.
+             EN: Padding increased (was 9,4) — per feedback about
+             unreadable/tiny filter buttons. -->
+        <Style x:Key="FilterBtn" TargetType="Button" BasedOn="{StaticResource DarkBtn}">
+            <Setter Property="Padding"  Value="12,7"/>
+            <Setter Property="FontSize" Value="{DynamicResource FontUI}"/>
+        </Style>
+
+        <!-- Мала службова / Small utility (було 7,3) -->
+        <Style x:Key="SmallBtn" TargetType="Button" BasedOn="{StaticResource DarkBtn}">
+            <Setter Property="Padding"  Value="9,5"/>
+            <Setter Property="FontSize" Value="{DynamicResource FontUI}"/>
+        </Style>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             ПОЛЕ ВВОДУ З PLACEHOLDER / INPUT FIELD WITH PLACEHOLDER
+             UA: Tag використовується як текст placeholder.
+             EN: Tag property used as placeholder text.
+             ═══════════════════════════════════════════════════════════════════ -->
+        <Style x:Key="DarkInput" TargetType="TextBox">
+            <Setter Property="Background"               Value="{DynamicResource InputBg}"/>
+            <Setter Property="Foreground"               Value="{DynamicResource TextPrim}"/>
+            <Setter Property="CaretBrush"               Value="{DynamicResource TextPrim}"/>
+            <Setter Property="BorderBrush"              Value="{DynamicResource InputBd}"/>
+            <Setter Property="BorderThickness"          Value="1"/>
+            <Setter Property="Padding"                  Value="10,5"/>
+            <Setter Property="FontSize"                 Value="{DynamicResource FontUI}"/>
+            <Setter Property="SelectionBrush"           Value="{DynamicResource Accent}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="5">
+                            <Grid>
+                                <ScrollViewer x:Name="PART_ContentHost"
+                                              Margin="{TemplateBinding Padding}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                <!-- UA: Placeholder — видимий лише коли поле порожнє
+                                     EN: Placeholder — visible only when field is empty -->
+                                <TextBlock Text="{TemplateBinding Tag}"
+                                           Foreground="{DynamicResource TextDim}"
+                                           FontStyle="Italic" IsHitTestVisible="False"
+                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                           Margin="11,0,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Text,
+                                                    RelativeSource={RelativeSource TemplatedParent}}"
+                                                    Value="">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </Application.Resources>
+</Application>

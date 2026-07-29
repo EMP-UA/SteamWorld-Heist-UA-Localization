@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="SWH.LocEditor.Core/SWH.LocEditor.Core.csproj" />
+  <Project Path="SWH.LocEditor.GUI/SWH.LocEditor.GUI.csproj" />
+</Solution>

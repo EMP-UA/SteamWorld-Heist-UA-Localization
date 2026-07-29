@@ -1,0 +1,12 @@
+# =============================================================================
+# SWH.LocEditor — проєктні правила / project-specific rules
+# =============================================================================
+# UA: Ці теки створюються поруч зі скомпільованим .exe під час роботи
+#     інструменту (вихідні файли, звіти про пропущені ключі) — це
+#     згенеровані дані користувача, а не вихідний код.
+# EN: These folders are created next to the compiled .exe while the tool
+#     runs (output files, missing-keys reports) — user-generated data, not
+#     source code.
+
+output/
+reports/
