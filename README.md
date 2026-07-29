@@ -46,6 +46,27 @@
 
 **EN:** `SWH.LocEditor` — a WPF application (split into `SWH.LocEditor.Core` — pure logic with no GUI dependency, and `SWH.LocEditor.GUI` — the WPF interface) for working with the game's language CSV directly: no intermediate QuickBMS steps, live per-cell translation validation, and a single screen for the whole proofreading workflow.
 
+<table>
+<tr>
+<td width="50%">
+
+**UA:** Темна тема, ще без завантаженого файлу.
+**EN:** Dark theme, no file loaded yet.
+
+<img src="assets/screenshots/dark_empty.png" alt="SWH.LocEditor — dark theme, empty state">
+
+</td>
+<td width="50%">
+
+**UA:** Світла тема, файл завантажено — кольорові рядки за статусом, лічильники фільтрів, контекстне меню.
+**EN:** Light theme, file loaded — status-colored rows, filter counters, context menu.
+
+<img src="assets/screenshots/light_loaded.png" alt="SWH.LocEditor — light theme, file loaded">
+
+</td>
+</tr>
+</table>
+
 ### Можливості / Features
 
 - **UA:** Читає `.csv.z` напряму (розпаковує в пам'яті через `SWH.LocEditor.Core`, без зовнішніх утиліт) або звичайний `.csv`; зберігає назад у той самий формат, з якого відкрито. / **EN:** Reads `.csv.z` directly (decompressed in-memory via `SWH.LocEditor.Core`, no external utilities) or a plain `.csv`; saves back in whatever format it was opened from.
