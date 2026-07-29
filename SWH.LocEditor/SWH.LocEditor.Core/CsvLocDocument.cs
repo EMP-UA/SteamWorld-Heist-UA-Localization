@@ -264,6 +264,110 @@ public class CsvLocDocument
     }
 
     /// <summary>
+    /// UA: Чи схожі байти на review TSV (а не на мовний CSV гри) — за
+    ///     заголовком першого рядка. Наш ToReviewTsvBytes і експорт з
+    ///     Google Таблиць обидва пишуть рядок заголовка, що починається з
+    ///     "ID"; у мовному CSV гри заголовка немає взагалі (перший рядок —
+    ///     звичайний запис, напр. "string\tenglish (...)\t..."). Цього
+    ///     достатньо, щоб надійно розвести два формати, які інакше
+    ///     виглядають однаково (обидва — текст, розділений табуляціями).
+    /// EN: Whether the bytes look like a review TSV (rather than a game
+    ///     language CSV) — judged by the first line's header. Both our
+    ///     ToReviewTsvBytes and the Google Sheets export write a header row
+    ///     starting with "ID"; the game's language CSV has no header at all
+    ///     (its first line is a regular entry, e.g. "string\tenglish
+    ///     (...)\t..."). That's enough to reliably tell apart two formats
+    ///     that otherwise look identical (both being tab-separated text).
+    /// </summary>
+    public static bool LooksLikeReviewTsv(byte[] bytes)
+    {
+        string text = new UTF8Encoding(false).GetString(bytes);
+        string[] lines = text.Split(LineSeparators, StringSplitOptions.None);
+        if (lines.Length == 0) return false;
+
+        var cols = lines[0].Split('\t');
+        return cols.Length >= 3 &&
+               cols[0].Trim().Equals("ID", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// UA: Зіставляє переклад із ФАЙЛУ ТОГО Ж ФОРМАТУ, ЩО Й ОРИГІНАЛ
+    ///     (Key\tТекст\tКоментар) — тобто з раніше збереженого
+    ///     перекладеного en.csv/en.csv.z. Зіставлення йде ЗА КЛЮЧЕМ:
+    ///     колонка тексту такого файлу вже містить переклад, тож вона
+    ///     лягає в Translated поточного документа.
+    ///
+    ///     ВАЖЛИВО, що саме цей шлях НЕ може дати й не дає:
+    ///       • статусу вичитки — у мовному CSV такої колонки не існує,
+    ///         тому ReviewNote не чіпається взагалі (лишається той, що вже
+    ///         є в документі);
+    ///       • звірки, чи не змінився англійський оригінал під тим самим
+    ///         ключем — у перекладеному файлі англійського тексту вже
+    ///         немає (його перезаписано перекладом), тому порівнювати
+    ///         фізично нема з чим.
+    ///     Через це шлях призначений для ВІДНОВЛЕННЯ власної роботи в
+    ///     межах тієї самої версії гри (напр. коли робочий TSV загубився
+    ///     або ще не існував на момент збереження), а не для перенесення
+    ///     перекладу на оновлену версію гри. Англійський оригінал у
+    ///     документі при цьому лишається з чистого файлу, відкритого через
+    ///     "Відкрити оригінал" — він тут не перезаписується.
+    ///
+    ///     Технічні рядки пропускаються: вони не потребують перекладу, а в
+    ///     збереженому файлі їхня колонка тексту й так дорівнює оригіналу.
+    ///     RecomputeDuplicates() викликається автоматично. Повертає
+    ///     кількість зіставлених рядків — 0 означає, що ключі не збіглися
+    ///     ЖОДНОГО разу (майже напевно обрано геть інший файл).
+    /// EN: Matches translations from a FILE IN THE SAME FORMAT AS THE
+    ///     ORIGINAL (Key\tText\tComment) — i.e. a previously saved,
+    ///     already-translated en.csv/en.csv.z. Matching is BY KEY: such a
+    ///     file's text column already holds the translation, so it lands in
+    ///     the current document's Translated.
+    ///
+    ///     IMPORTANT — what this path cannot and does not do:
+    ///       • no review status — a language CSV has no such column, so
+    ///         ReviewNote is left completely untouched (whatever is already
+    ///         in the document stays);
+    ///       • no check for whether the English original changed under the
+    ///         same key — a translated file no longer contains the English
+    ///         text (it was overwritten by the translation), so there is
+    ///         physically nothing to compare against.
+    ///     Hence this path is for RECOVERING your own work within the same
+    ///     game version (e.g. when the working TSV was lost or didn't exist
+    ///     yet at save time), not for carrying a translation onto an
+    ///     updated game version. The document's English original still
+    ///     comes from the pristine file opened via "Open original" — it is
+    ///     not overwritten here.
+    ///
+    ///     Technical rows are skipped: they need no translation, and in a
+    ///     saved file their text column equals the original anyway.
+    ///     RecomputeDuplicates() is called automatically. Returns the
+    ///     number of matched rows — 0 means not a single key matched
+    ///     (almost certainly an entirely wrong file was picked).
+    /// </summary>
+    public int MergeTranslatedCsv(byte[] csvBytes)
+    {
+        var translatedDoc = Parse(csvBytes);
+        var translations = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var e in translatedDoc.Entries)
+        {
+            if (e.IsStructural) continue;
+            translations[e.Key] = e.Original;
+        }
+
+        int merged = 0;
+        foreach (var entry in Entries)
+        {
+            if (entry.IsStructural || entry.IsTechnical) continue;
+            if (!translations.TryGetValue(entry.Key, out var translatedText)) continue;
+
+            entry.Translated = translatedText;
+            merged++;
+        }
+        RecomputeDuplicates();
+        return merged;
+    }
+
+    /// <summary>
     /// UA: Ключі оригіналу, яких не було знайдено при останньому злитті
     ///     review — тобто ще не перекладені/не звірені рядки.
     /// EN: Original keys not found during the last review merge — i.e. rows

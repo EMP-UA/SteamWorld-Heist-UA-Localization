@@ -170,8 +170,9 @@
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
             <Button x:Name="OpenOriginalButton" Content="📂 Відкрити оригінал / Open Original"
                     Style="{StaticResource DarkBtn}" Margin="0,0,6,0" Click="OpenOriginalButton_Click"/>
-            <Button x:Name="MergeReviewButton" Content="📋 Злити review / Merge Review"
-                    Style="{StaticResource DarkBtn}" Margin="0,0,6,0" IsEnabled="False" Click="MergeReviewButton_Click"/>
+            <Button x:Name="MergeReviewButton" Content="📋 Злити переклад / Merge Translation"
+                    Style="{StaticResource DarkBtn}" Margin="0,0,6,0" IsEnabled="False" Click="MergeReviewButton_Click"
+                    ToolTip="UA: Приймає і робочий TSV (переклад + вичитка), і раніше збережений перекладений .csv/.csv.z (лише переклад) — формат визначається автоматично / EN: Accepts both a working TSV (translation + review) and a previously saved translated .csv/.csv.z (translation only) — the format is detected automatically"/>
             <Button x:Name="ExportTsvButton" Content="📤 Експорт TSV / Export TSV"
                     Style="{StaticResource DarkBtn}" Margin="0,0,6,0" IsEnabled="False" Click="ExportTsvButton_Click"
                     ToolTip="UA: Вивантажити ключ/оригінал/переклад у TSV для ручного редагування в Excel/Google Таблицях / EN: Export key/original/translation to TSV for manual editing in Excel/Google Sheets"/>

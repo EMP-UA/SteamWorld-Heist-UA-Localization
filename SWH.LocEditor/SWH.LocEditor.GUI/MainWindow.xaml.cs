@@ -320,44 +320,140 @@ public partial class MainWindow : Window
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // ЗЛИТТЯ REVIEW / MERGING REVIEW
+    // ЗЛИТТЯ ПЕРЕКЛАДУ / MERGING A TRANSLATION
+    //
+    // UA: Одна кнопка на ОБИДВА джерела перекладу, бо для користувача це
+    //     одна й та сама дія — "підтягни сюди мій переклад", і змушувати
+    //     його заздалегідь знати, який саме формат у файлі, немає сенсу:
+    //       • робочий TSV (той, що пише ця програма при збереженні, або
+    //         експорт з Google Таблиць) — має і переклад, і статус вичитки;
+    //       • раніше збережений перекладений .csv/.csv.z — має лише
+    //         переклад (колонки вичитки в мовному CSV не існує).
+    //     Другий шлях потрібен цілком реально: якщо .csv.z для гри вже
+    //     згенеровано, а парного TSV поруч немає (загубився чи ще не
+    //     створювався), то єдине, що лишилось від роботи — сам
+    //     перекладений файл, і відновитись треба саме з нього.
+    //
+    //     Формат визначається автоматично (CsvLocDocument.LooksLikeReviewTsv
+    //     — за заголовком "ID" у першому рядку), тож у діалозі за
+    //     замовчуванням пропонується тека review/ і TSV, але можна
+    //     перемкнути тип на мовні файли гри чи "Усі файли" й обрати що
+    //     завгодно звідки завгодно — програма розбереться сама.
+    //
+    //     Захист від геть іншого файлу — за фактом, а не за розширенням:
+    //     якщо не збігся ЖОДЕН ключ, зміни не мають сенсу, і замість тихого
+    //     "зіставлено 0" показується помилка з пропозицією обрати інший
+    //     файл. Розширення тут ненадійне: .txt/.csv може бути будь-чим.
+    // EN: One button for BOTH translation sources, because to the user it's
+    //     the same action — "pull my translation in here" — and making them
+    //     know the file's exact format up front serves no purpose:
+    //       • the working TSV (written by this app on save, or exported
+    //         from Google Sheets) — carries both translation and review
+    //         status;
+    //       • a previously saved translated .csv/.csv.z — carries only the
+    //         translation (a language CSV has no review column).
+    //     That second path is a real need: if the game's .csv.z has already
+    //     been generated but there's no paired TSV next to it (lost, or not
+    //     yet produced at save time), the translated file is all that's
+    //     left of the work, and recovery has to come from it.
+    //
+    //     The format is detected automatically
+    //     (CsvLocDocument.LooksLikeReviewTsv — by the "ID" header on line
+    //     one), so the dialog defaults to the review/ folder and TSV, but
+    //     the type can be switched to game language files or "All files"
+    //     and anything picked from anywhere — the app works it out.
+    //
+    //     The guard against a completely unrelated file is based on the
+    //     outcome, not the extension: if NOT A SINGLE key matched, the
+    //     merge is meaningless, so instead of silently reporting "matched
+    //     0" it shows an error offering to pick another file. Extensions
+    //     are unreliable here: a .txt/.csv could be anything.
     // ══════════════════════════════════════════════════════════════════════
 
     private void MergeReviewButton_Click(object sender, RoutedEventArgs e)
     {
         if (_document == null) return;
 
-        var dlg = new OpenFileDialog
+        // UA: Цикл — щоб після "обрати інший файл" одразу відкривався той
+        //     самий діалог, без повторного кліку по кнопці.
+        // EN: A loop — so "pick another file" reopens the same dialog right
+        //     away, with no need to click the button again.
+        while (true)
         {
-            InitialDirectory = Path.GetFullPath(ReviewDir),
-            Filter = "UA: Файли перекладу (review) / EN: Review translation files|*.tsv;*.txt|Усі файли / All files|*.*",
-            Title = "② UA: Злити review TSV / EN: Merge review TSV"
-        };
-        if (dlg.ShowDialog() != true) return;
+            var dlg = new OpenFileDialog
+            {
+                InitialDirectory = Path.GetFullPath(ReviewDir),
+                Filter = "UA: Робочий TSV / EN: Working TSV|*.tsv;*.txt|" +
+                         "UA: Мовні файли гри / EN: Game language files|*.csv;*.csv.z|" +
+                         "Усі файли / All files|*.*",
+                Title = "② UA: Злити переклад (TSV або перекладений CSV) / " +
+                        "EN: Merge translation (TSV or translated CSV)"
+            };
+            if (dlg.ShowDialog() != true) return;
 
-        SimpleLogger.Info($"Merging review: {dlg.FileName}");
-        try
-        {
-            byte[] tsvBytes = File.ReadAllBytes(dlg.FileName);
-            int merged = _document.MergeReview(tsvBytes);
-            int missing = _document.FindMissingTranslations().Count;
+            SimpleLogger.Info($"Merging translation from: {dlg.FileName}");
+            try
+            {
+                // UA: LoadRaw, а не ReadAllBytes — так само приймається
+                //     стиснутий .csv.z (розпакується в пам'яті). Для
+                //     звичайного файлу це просто читання байтів.
+                // EN: LoadRaw rather than ReadAllBytes — this also accepts a
+                //     compressed .csv.z (decompressed in memory). For a plain
+                //     file it's just a byte read.
+                byte[] bytes = LanguageArchive.LoadRaw(dlg.FileName);
+                bool isReviewTsv = CsvLocDocument.LooksLikeReviewTsv(bytes);
 
-            foreach (var vm in _entries) vm.RefreshFromCore();
+                int merged = isReviewTsv
+                    ? _document.MergeReview(bytes)
+                    : _document.MergeTranslatedCsv(bytes);
 
-            SaveMissingKeysReport(dlg.FileName);
+                if (merged == 0)
+                {
+                    SimpleLogger.Warn($"Merge matched 0 keys, likely a wrong file: {dlg.FileName}");
+                    var retry = MessageBox.Show(
+                        $"UA: У файлі «{Path.GetFileName(dlg.FileName)}» не знайдено ЖОДНОГО ключа з " +
+                        "поточного оригіналу — найімовірніше, це не той файл.\n\n" +
+                        $"EN: Not a SINGLE key from the current original was found in " +
+                        $"«{Path.GetFileName(dlg.FileName)}» — most likely this is the wrong file.\n\n" +
+                        "UA: Обрати інший файл? / EN: Pick another file?",
+                        "⚠ UA: Нічого не зіставлено / EN: Nothing matched",
+                        MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    if (retry == MessageBoxResult.Yes) continue;
+                    return;
+                }
 
-            RefreshView();
-            ShowStatus($"✓ UA: Зіставлено {merged} перекладів, {missing} пропущено / " +
-                       $"EN: Matched {merged} translations, {missing} missing " +
-                       $"· «{Path.GetFileName(dlg.FileName)}»");
-            SimpleLogger.Info($"Review merged OK: {dlg.FileName} · matched={merged} missing={missing}");
-        }
-        catch (Exception ex)
-        {
-            SimpleLogger.Error($"Merge review failed: {dlg.FileName}", ex);
-            MessageBox.Show(
-                $"UA: Помилка читання review / EN: Review read error:\n\n{ex.Message}",
-                "Помилка / Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                foreach (var vm in _entries) vm.RefreshFromCore();
+
+                SaveMissingKeysReport(dlg.FileName);
+
+                RefreshView();
+
+                // UA: Явно повідомляємо, чи підтягнувся статус вичитки —
+                //     інакше з перекладеного CSV він тихо не з'явиться, і це
+                //     виглядало б як втрата даних.
+                // EN: State explicitly whether review status came along —
+                //     otherwise it silently won't appear from a translated
+                //     CSV, which would look like data loss.
+                string sourceNote = isReviewTsv
+                    ? "робочий TSV (з вичиткою) / working TSV (with review)"
+                    : "перекладений CSV (без вичитки) / translated CSV (no review)";
+                int missing = _document.FindMissingTranslations().Count;
+
+                ShowStatus($"✓ UA: Зіставлено {merged} перекладів · {sourceNote} " +
+                           $"· «{Path.GetFileName(dlg.FileName)}» / " +
+                           $"EN: Matched {merged} translations");
+                SimpleLogger.Info($"Merge OK: {dlg.FileName} · reviewTsv={isReviewTsv} " +
+                                  $"matched={merged} missing={missing}");
+                return;
+            }
+            catch (Exception ex)
+            {
+                SimpleLogger.Error($"Merge failed: {dlg.FileName}", ex);
+                MessageBox.Show(
+                    $"UA: Помилка читання файлу / EN: File read error:\n\n{ex.Message}",
+                    "Помилка / Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
         }
     }
 
