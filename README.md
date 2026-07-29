@@ -1,5 +1,9 @@
 # SteamWorld Heist — Ukrainian Localization (by EMP_UA)
 
+![Platform](https://img.shields.io/badge/Platform-Windows-blue)
+![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)
+![License](https://img.shields.io/badge/License-MIT-green)
+
 **UA:** Цей репозиторій містить технічний вихідний код та скрипти, розроблені для української локалізації SteamWorld Heist.
 **EN:** This repository contains the technical source code and scripts developed for the Ukrainian localization of SteamWorld Heist.
 
@@ -42,30 +46,31 @@
 
 ## 📝 Localization Editor GUI / Редактор локалізації з графічним інтерфейсом (`SWH.LocEditor`)
 
+![SWH.LocEditor](https://img.shields.io/badge/SWH.LocEditor-v1.0-8A46C1)
+
 **UA:** `SWH.LocEditor` — WPF-застосунок (розділений на `SWH.LocEditor.Core` — чиста логіка без залежності від GUI, і `SWH.LocEditor.GUI` — WPF-інтерфейс) для роботи з мовним CSV гри напряму: без проміжних кроків через QuickBMS, з живою валідацією перекладу по клітинці й одним екраном для всього процесу вичитки.
 
 **EN:** `SWH.LocEditor` — a WPF application (split into `SWH.LocEditor.Core` — pure logic with no GUI dependency, and `SWH.LocEditor.GUI` — the WPF interface) for working with the game's language CSV directly: no intermediate QuickBMS steps, live per-cell translation validation, and a single screen for the whole proofreading workflow.
 
-<table>
-<tr>
-<td width="50%">
-
 **UA:** Темна тема, ще без завантаженого файлу.
 **EN:** Dark theme, no file loaded yet.
 
-<img src="assets/screenshots/dark_empty.png" alt="SWH.LocEditor — dark theme, empty state">
-
-</td>
-<td width="50%">
+![SWH.LocEditor — dark theme, empty state](assets/screenshots/dark_empty.png)
 
 **UA:** Світла тема, файл завантажено — кольорові рядки за статусом, лічильники фільтрів, контекстне меню.
 **EN:** Light theme, file loaded — status-colored rows, filter counters, context menu.
 
-<img src="assets/screenshots/light_loaded.png" alt="SWH.LocEditor — light theme, file loaded">
+![SWH.LocEditor — light theme, file loaded](assets/screenshots/light_loaded.png)
 
-</td>
-</tr>
-</table>
+### Завантаження / Download
+
+**UA:** Готові збірки — на сторінці [Releases](../../releases/tag/loceditor-v1.0). **EN:** Prebuilt binaries — on the [Releases](../../releases/tag/loceditor-v1.0) page.
+
+| Файл / File | UA: Опис / EN: Description |
+|---|---|
+| `SWH.LocEditor-v1.0-win-x64.zip` | **UA:** Windows 64-bit, не потребує .NET / **EN:** Windows 64-bit, no .NET required |
+| `SWH.LocEditor-v1.0-win-x86.zip` | **UA:** Windows 32-bit, не потребує .NET / **EN:** Windows 32-bit, no .NET required |
+| `SWH.LocEditor-v1.0-framework-dependent.zip` | **UA:** Потребує [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) / **EN:** Requires [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) |
 
 ### Можливості / Features
 
@@ -145,6 +150,24 @@
   - `ImpakRepacker.cs` — **UA:** перепакування DLC-архівів зі збереженням оригінальних рівнів стиснення. **EN:** DLC archive repacking that preserves original compression levels.
   - `OllamaTranslatorClient.cs` — **UA:** клієнт для автоматизації ШІ-перекладу через локальний Ollama. **EN:** automation client for the AI translation pass via local Ollama.
 - **`LICENSE`** — **UA:** ліцензія проєкту (MIT). **EN:** the project's license (MIT).
+
+---
+
+## 💜 Підтримка / Support the Project
+
+**UA:** Якщо цей інструмент виявився корисним — підтримати можна тут:
+**EN:** If you find this tool useful — support is appreciated:
+
+- ☕ [Ko-fi](https://ko-fi.com/emp_ua) — **EN:** International
+- 🏦 [Monobank](https://send.monobank.ua/jar/7PnVgizntU) — **UA:** Україна
+- 💳 [StreamElements](https://streamelements.com/emp_ua/tip) — PayPal
+
+---
+
+## 📺 Автор / Author
+
+**EMP_UA** — **UA:** Український контент-мейкер та локалізатор ігор. **EN:** Ukrainian content creator & game localizer.
+[YouTube](https://www.youtube.com/@EMPs_UA) • [Twitch](https://www.twitch.tv/emp_ua) • [Discord](https://discord.gg/QdmgsCgPkp) • [Telegram](https://t.me/EMP_UA) • [Website](https://emp-ua-site.pages.dev)
 
 ---
 
