@@ -62,15 +62,7 @@
 
 ![SWH.LocEditor — light theme, file loaded](assets/screenshots/light_loaded.png)
 
-### Завантаження / Download
-
-**UA:** Готові збірки — на сторінці [Releases](../../releases/tag/loceditor-v1.0). **EN:** Prebuilt binaries — on the [Releases](../../releases/tag/loceditor-v1.0) page.
-
-| Файл / File | UA: Опис / EN: Description |
-|---|---|
-| `SWH.LocEditor-v1.0-win-x64.zip` | **UA:** Windows 64-bit, не потребує .NET / **EN:** Windows 64-bit, no .NET required |
-| `SWH.LocEditor-v1.0-win-x86.zip` | **UA:** Windows 32-bit, не потребує .NET / **EN:** Windows 32-bit, no .NET required |
-| `SWH.LocEditor-v1.0-framework-dependent.zip` | **UA:** Потребує [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) / **EN:** Requires [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) |
+**UA:** Готові збірки (win-x64 / win-x86 / framework-dependent) — на сторінці [Releases](../../releases/latest). **EN:** Prebuilt binaries (win-x64 / win-x86 / framework-dependent) — on the [Releases](../../releases/latest) page.
 
 ### Можливості / Features
 
