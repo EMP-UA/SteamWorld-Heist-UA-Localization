@@ -294,6 +294,7 @@ public partial class MainWindow : Window
                 _entries.Add(new LocEntryViewModel(entry));
 
             MergeReviewButton.IsEnabled = true;
+            MergeTranslatedCsvButton.IsEnabled = true;
             ExportTsvButton.IsEnabled = true;
             SaveButton.IsEnabled = true;
 
@@ -357,6 +358,65 @@ public partial class MainWindow : Window
             SimpleLogger.Error($"Merge review failed: {dlg.FileName}", ex);
             MessageBox.Show(
                 $"UA: Помилка читання review / EN: Review read error:\n\n{ex.Message}",
+                "Помилка / Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ЗЛИТТЯ ПЕРЕКЛАДЕНОГО CSV / MERGING A TRANSLATED CSV
+    // UA: На відміну від "Злити review" (читає TSV з Google Таблиць), ця
+    //     кнопка читає файл ТОГО Ж формату, що й оригінал (.csv/.csv.z) —
+    //     тобто раніше збережений перекладений en.csv.z. Потрібно, коли
+    //     робочий review TSV застарів відносно вже випущеного перекладу
+    //     (напр. гра оновилась і видала новий оригінал з новими ключами):
+    //     відкриваємо новий оригінал, тоді "зливаємо" сюди старий
+    //     перекладений файл, щоб одразу підтягнути готові переклади для
+    //     збіжних ключів. Статус вичитки НЕ підтягується — такий файл
+    //     його просто не містить.
+    // EN: Unlike "Merge Review" (reads a TSV from Google Sheets), this
+    //     button reads a file in the SAME format as the original
+    //     (.csv/.csv.z) — i.e. a previously saved translated en.csv.z.
+    //     Needed when the working review TSV has gone stale relative to an
+    //     already-shipped translation (e.g. the game updated and shipped a
+    //     new original with new keys): open the new original, then "merge"
+    //     the old translated file here to instantly carry over finished
+    //     translations for matching keys. Review status is NOT carried
+    //     over — that kind of file simply doesn't have one.
+    // ══════════════════════════════════════════════════════════════════════
+
+    private void MergeTranslatedCsvButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_document == null) return;
+
+        var dlg = new OpenFileDialog
+        {
+            InitialDirectory = Path.GetFullPath(OutputDir),
+            Filter = "UA: Мовні файли гри / EN: Game language files|*.csv;*.csv.z|" +
+                     "Стиснуті / Compressed (*.csv.z)|*.csv.z|" +
+                     "Звичайний CSV / Plain CSV (*.csv)|*.csv|" +
+                     "Усі файли / All files|*.*",
+            Title = "🔀 UA: Злити перекладений CSV / EN: Merge translated CSV"
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        SimpleLogger.Info($"Merging translated CSV: {dlg.FileName}");
+        try
+        {
+            byte[] rawCsv = LanguageArchive.LoadRaw(dlg.FileName);
+            int merged = _document.MergeTranslatedCsv(rawCsv);
+
+            foreach (var vm in _entries) vm.RefreshFromCore();
+
+            RefreshView();
+            ShowStatus($"✓ UA: Підтягнуто {merged} перекладів із «{Path.GetFileName(dlg.FileName)}» / " +
+                       $"EN: Pulled in {merged} translations from «{Path.GetFileName(dlg.FileName)}»");
+            SimpleLogger.Info($"Translated CSV merged OK: {dlg.FileName} · matched={merged}");
+        }
+        catch (Exception ex)
+        {
+            SimpleLogger.Error($"Merge translated CSV failed: {dlg.FileName}", ex);
+            MessageBox.Show(
+                $"UA: Помилка читання файлу / EN: File read error:\n\n{ex.Message}",
                 "Помилка / Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
