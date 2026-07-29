@@ -87,6 +87,10 @@ public static class Loc
         { "RowWarning", (" [УВАГА] Кількість рядків не збігається!", " [WARNING] Row count mismatch!") },
         { "Integrated", (" Інтегровано перекладів: {0}", " Translations integrated: {0}") },
         { "Errors", (" Помилок валідації: {0}", " Validation errors: {0}") },
+        { "MissingKeysHeader", ("\n [ПРОПУЩЕНО В REVIEW] {0}: знайдено {1} ключів без перекладу (з {2} рядків оригіналу):", "\n [MISSING FROM REVIEW] {0}: found {1} keys without a review translation (out of {2} original rows):") },
+        { "MissingKeysMore", ("    ... і ще {0} (повний список — у файлі)", "    ... and {0} more (full list in the report file)") },
+        { "MissingKeysSaved", (" [+] Список пропущених ключів збережено: {0}", " [+] Missing-keys list saved to: {0}") },
+        { "MissingKeysNone", (" [OK] Усі ключі оригіналу знайдено в review.", " [OK] All original keys were found in the review file.") },
         { "PressEnter", ("\nОперацію завершено. Натисніть Enter...", "\nOperation completed. Press Enter...") }
     };
 
@@ -103,6 +107,7 @@ public static class Loc
 class Program
 {
     private const string ConfigFileName = "config.json";
+    private const string ReportsDirName = "reports";
 
     static void Main(string[] args)
     {
@@ -261,6 +266,12 @@ class Program
         int errorsFound = 0;
         int mergedCount = 0;
 
+        // UA: Ключі оригіналу, для яких не знайшлось запису в review —
+        //     тобто ще не перекладені/не звірені рядки.
+        // EN: Original keys with no matching review entry — i.e. rows not
+        //     yet translated/checked.
+        var missingKeys = new List<(string Id, string Eng)>();
+
         var originalLines = File.ReadAllLines(task.OriginalFile, Encoding.UTF8);
         totalRowsOriginal = originalLines.Length;
 
@@ -302,6 +313,10 @@ class Program
                     finalTranslation = finalTranslation.TrimEnd('.');
                 }
             }
+            else if (!string.IsNullOrEmpty(keyId))
+            {
+                missingKeys.Add((keyId, originalEng));
+            }
 
             cols[1] = finalTranslation;
             writer.WriteLine(string.Join("\t", cols));
@@ -319,7 +334,57 @@ class Program
         Console.ForegroundColor = errorsFound > 0 ? ConsoleColor.Red : ConsoleColor.Green;
         Console.WriteLine(Loc.Get("Errors", errorsFound));
         Console.ResetColor();
+
+        // 4. UA: Звіт про ключі, відсутні в review (консоль + файл)
+        // EN: Report for keys missing from the review file (console + file)
+        ReportMissingKeys(task.Name, missingKeys, totalRowsOriginal);
     }
+
+    // UA: Виводить у консоль (з обмеженим превʼю) і зберігає в reports/
+    //     повний список ключів оригіналу, яких немає в review-файлі —
+    //     щоб одразу бачити, що ще не перекладено/не звірено.
+    // EN: Prints (with a limited preview) to the console and saves the full
+    //     list of original keys missing from the review file into reports/ —
+    //     so gaps in translation/review are visible right away.
+    static void ReportMissingKeys(string taskName, List<(string Id, string Eng)> missingKeys, int totalRows)
+    {
+        if (missingKeys.Count == 0)
+        {
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine(Loc.Get("MissingKeysNone"));
+            Console.ResetColor();
+            return;
+        }
+
+        Console.ForegroundColor = ConsoleColor.DarkYellow;
+        Console.WriteLine(Loc.Get("MissingKeysHeader", taskName, missingKeys.Count, totalRows));
+
+        const int previewLimit = 15;
+        foreach (var (id, eng) in missingKeys.Take(previewLimit))
+        {
+            Console.WriteLine($"    {id}: {Truncate(eng, 70)}");
+        }
+        if (missingKeys.Count > previewLimit)
+            Console.WriteLine(Loc.Get("MissingKeysMore", missingKeys.Count - previewLimit));
+        Console.ResetColor();
+
+        Directory.CreateDirectory(ReportsDirName);
+        string safeName = string.Join("_", taskName.Split(Path.GetInvalidFileNameChars()));
+        string reportPath = Path.Combine(ReportsDirName, $"MissingKeys_{safeName}.txt");
+
+        using (var reportWriter = new StreamWriter(reportPath, false, new UTF8Encoding(false)))
+        {
+            reportWriter.WriteLine($"# Missing in review / Відсутні в review — {taskName}");
+            reportWriter.WriteLine($"# {missingKeys.Count} / {totalRows}");
+            reportWriter.WriteLine("# ID\tEnglish");
+            foreach (var (id, eng) in missingKeys)
+                reportWriter.WriteLine($"{id}\t{eng}");
+        }
+
+        Console.WriteLine(Loc.Get("MissingKeysSaved", reportPath));
+    }
+
+    static string Truncate(string s, int maxLen) => s.Length <= maxLen ? s : s.Substring(0, maxLen) + "…";
 
     // UA: Технічна валідація одного рядка перекладу — запобігає крашам
     //     рушія через биті теги/змінні/переноси рядків.
