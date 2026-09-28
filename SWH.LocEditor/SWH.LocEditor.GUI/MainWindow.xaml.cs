@@ -743,6 +743,77 @@ public partial class MainWindow : Window
     }
 
     // ══════════════════════════════════════════════════════════════════════
+    // МАСОВЕ ПРОСТАВЛЕННЯ ВИЧИТКИ / BULK REVIEW MARKING
+    // ══════════════════════════════════════════════════════════════════════
+    //
+    // UA: На відміну від решти пунктів контекстного меню вище (які працюють
+    //     з ОДНИМ MainGrid.SelectedItem), ці три обробники застосовують
+    //     позначку до ВСІХ рядків з MainGrid.SelectedItems — це можливо
+    //     завдяки SelectionMode="Extended" у декларації DataGrid в XAML.
+    // EN: Unlike the rest of the context-menu items above (which work off a
+    //     SINGLE MainGrid.SelectedItem), these three handlers apply the
+    //     marker to ALL rows in MainGrid.SelectedItems — this relies on the
+    //     DataGrid's SelectionMode="Extended" declared in the XAML.
+
+    /// <summary>
+    /// UA: Пункти меню "+" / "-" / "+/-" — готова позначка передається через
+    ///     Tag відповідного MenuItem, щоб не заводити три майже однакові
+    ///     обробники.
+    /// EN: The "+" / "-" / "+/-" menu items — the ready-made marker comes
+    ///     through the clicked MenuItem's Tag, avoiding three near-identical
+    ///     handlers.
+    /// </summary>
+    private void CtxMarkReviewSelectedPreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: string marker })
+            ApplyReviewNoteToSelection(marker);
+    }
+
+    private void CtxMarkReviewSelectedCustom_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new ReviewMarkPromptWindow { Owner = this };
+        if (dlg.ShowDialog() == true)
+            ApplyReviewNoteToSelection(dlg.ReviewText);
+    }
+
+    private void CtxMarkReviewSelectedClear_Click(object sender, RoutedEventArgs e) =>
+        ApplyReviewNoteToSelection("");
+
+    /// <summary>
+    /// UA: Спільна реалізація для трьох пунктів меню вище. Пише через той
+    ///     самий сеттер LocEntryViewModel.ReviewNote, яким користується і
+    ///     звичайне редагування клітинки одного рядка — тому WasReviewed,
+    ///     лічильники фільтрів і прапорець незбереженої роботи (для
+    ///     автозбереження) оновлюються так само коректно, як і при ручному
+    ///     редагуванні. RefreshView() наприкінці — один виклик на всю пачку,
+    ///     а не по одному на рядок.
+    /// EN: Shared implementation for the three menu items above. Writes
+    ///     through the same LocEntryViewModel.ReviewNote setter used by
+    ///     ordinary single-row cell editing — so WasReviewed, the filter
+    ///     counters, and the unsaved-work flag (for autosave) all update
+    ///     just as correctly as on a manual edit. RefreshView() runs once
+    ///     for the whole batch, not once per row.
+    /// </summary>
+    private void ApplyReviewNoteToSelection(string marker)
+    {
+        var selected = MainGrid.SelectedItems.Cast<LocEntryViewModel>().ToList();
+        if (selected.Count == 0)
+        {
+            ShowStatus("ℹ UA: Немає виділених рядків / EN: No rows selected");
+            return;
+        }
+
+        foreach (var vm in selected)
+            vm.ReviewNote = marker;
+
+        RefreshView();
+
+        string shown = string.IsNullOrEmpty(marker) ? "(порожньо / empty)" : $"«{marker}»";
+        ShowStatus($"✓ UA: Вичитку {shown} застосовано до {selected.Count} рядків / " +
+                   $"EN: Review {shown} applied to {selected.Count} rows");
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
     // ЗАВЕРШЕННЯ РЕДАГУВАННЯ КЛІТИНКИ / CELL EDIT COMPLETION
     // ══════════════════════════════════════════════════════════════════════
 
@@ -833,10 +904,19 @@ public partial class MainWindow : Window
         if (!passes) return false;
         if (string.IsNullOrEmpty(_searchText)) return true;
 
+        // UA: Пошук охоплює й коментар розробника (3-тя колонка CSV) — там
+        //     трапляються позначки на кшталт "do not translate"/"Latin: ...",
+        //     за якими рядок інакше не знайти, бо в Original/Translated їх
+        //     немає.
+        // EN: The search also covers the developer comment (3rd CSV column)
+        //     — it holds markers like "do not translate"/"Latin: ...", which
+        //     a row would otherwise be unfindable by, since they aren't in
+        //     Original/Translated.
         string q = _searchText.ToLowerInvariant();
         return e.Key.ToLowerInvariant().Contains(q)
             || e.Original.ToLowerInvariant().Contains(q)
-            || e.Translated.ToLowerInvariant().Contains(q);
+            || e.Translated.ToLowerInvariant().Contains(q)
+            || e.Comment.ToLowerInvariant().Contains(q);
     }
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)

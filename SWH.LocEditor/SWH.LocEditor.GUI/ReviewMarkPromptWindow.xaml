@@ -1,0 +1,41 @@
+<Window x:Class="SWH.LocEditor.GUI.ReviewMarkPromptWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="✎ Власний текст вичитки / Custom review text"
+        Width="460" Height="220" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BgBase}"
+        FontSize="{DynamicResource FontUI}">
+
+    <!-- UA: Мінімальне модальне вікно за зразком SettingsWindow — та сама
+         тема (BgBase/TextPrim/TextSec), ті самі стилі кнопок і поля вводу
+         (DarkInput/DarkBtn/PrimaryBtn), щоб не заводити другий візуальний
+         "діалект" у програмі. Використовується лише для МАСОВОГО
+         проставлення довільного тексту вичитки кільком виділеним рядкам
+         одразу — для одного рядка й далі зручніший прямий подвійний клік
+         по клітинці «Вичитка».
+         EN: A minimal modal window modeled on SettingsWindow — the same
+         theme (BgBase/TextPrim/TextSec), the same button/input styles
+         (DarkInput/DarkBtn/PrimaryBtn), so the app doesn't grow a second
+         visual "dialect". Used only for BULK-setting a free-form review
+         text on several selected rows at once — for a single row,
+         double-clicking the "Review" cell directly is still simpler. -->
+    <StackPanel Margin="20">
+        <TextBlock Text="Текст вичитки для всіх виділених рядків / Review text for all selected rows"
+                   FontWeight="SemiBold" FontSize="{DynamicResource FontUI}"
+                   Foreground="{DynamicResource TextPrim}"
+                   TextWrapping="Wrap"/>
+        <TextBlock Text="UA: Можна вписати будь-який коментар — не лише готові позначки +/-/+-. / EN: Any comment can be typed here — not just the ready-made +/-/+- markers."
+                   Foreground="{DynamicResource TextSec}"
+                   FontSize="{DynamicResource FontTiny}" TextWrapping="Wrap" Margin="0,6,0,14"/>
+
+        <TextBox x:Name="TextBox" Style="{StaticResource DarkInput}"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,28,0,0">
+            <Button Content="Скасувати / Cancel" Style="{StaticResource DarkBtn}"
+                    Margin="0,0,8,0" Click="Cancel_Click" IsCancel="True"/>
+            <Button Content="✓ Застосувати / Apply" Style="{StaticResource PrimaryBtn}"
+                    Click="Apply_Click" IsDefault="True"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

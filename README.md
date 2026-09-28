@@ -1,11 +1,13 @@
 # SteamWorld Heist — Ukrainian Localization (by EMP_UA)
 
-![Platform](https://img.shields.io/badge/Platform-Windows-blue)
-![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)
-![License](https://img.shields.io/badge/License-MIT-green)
+> UA: Технічний вихідний код та інструментарій, розроблені для української локалізації SteamWorld Heist.
+> EN: The technical source code and tooling developed for the Ukrainian localization of SteamWorld Heist.
 
-**UA:** Цей репозиторій містить технічний вихідний код та скрипти, розроблені для української локалізації SteamWorld Heist.
-**EN:** This repository contains the technical source code and scripts developed for the Ukrainian localization of SteamWorld Heist.
+[![Platform: Windows](https://img.shields.io/badge/Platform-Windows-C989F3.svg)](https://github.com/EMP-UA/SteamWorld-Heist-UA-Localization)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-8A46C1.svg)](https://dotnet.microsoft.com/download/dotnet/10.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-8A46C1.svg)](LICENSE)
+
+*Silence will fall.* ⚡
 
 ---
 
@@ -46,7 +48,7 @@
 
 ## 📝 Localization Editor GUI / Редактор локалізації з графічним інтерфейсом (`SWH.LocEditor`)
 
-![SWH.LocEditor](https://img.shields.io/badge/SWH.LocEditor-v1.0.1-8A46C1)
+[![SWH.LocEditor](https://img.shields.io/badge/SWH.LocEditor-v1.0.2-8A46C1.svg)](../../releases/latest)
 
 **UA:** `SWH.LocEditor` — WPF-застосунок (розділений на `SWH.LocEditor.Core` — чиста логіка без залежності від GUI, і `SWH.LocEditor.GUI` — WPF-інтерфейс) для роботи з мовним CSV гри напряму: без проміжних кроків через QuickBMS, з живою валідацією перекладу по клітинці й одним екраном для всього процесу вичитки.
 
@@ -71,7 +73,9 @@
 - **UA:** Живі перевірки перекладу під час редагування: кирилиця у службовій змінній (`%д` замість `%d` — падіння рушія), незбалансовані теги, та попередження про підозріло довший/коротший за оригінал переклад (пороги підібрані під природну довшість української мови, а не задають хибних спрацювань на кожному рядку). / **EN:** Live translation checks while editing: Cyrillic inside an engine variable (`%д` instead of `%d` — crashes the engine), unbalanced tags, and warnings for a translation suspiciously longer/shorter than the original (thresholds tuned for Ukrainian's natural length expansion, not false-triggering on every row).
 - **UA:** Виявлення дублікатів оригіналу (однаковий текст під різними ключами) з одним кліком розповсюдження перекладу на всю групу, і окремим маркером, якщо дублікати вже розійшлися в перекладі. / **EN:** Duplicate-original detection (identical text under different keys) with a one-click propagate-to-group action, plus a separate marker if duplicates have already drifted out of sync in translation.
 - **UA:** Колонка "Вичитка" — редагована: приймає готові позначки (`+`, `-`, `+/-`) або довільний коментар до рядка; автозбереження тихо пише робочий TSV (лише ті колонки, якими володіє програма — див. нижче) у `review/`, якщо є незбережена робота. / **EN:** An editable "Review" column — accepts ready-made markers (`+`, `-`, `+/-`) or a free-form per-row comment; autosave silently writes the working TSV (only the columns the program owns — see below) into `review/` whenever there's unsaved work.
+- **UA:** Масове проставлення позначки вичитки для кількох виділених рядків одразу — таблиця підтримує множинне виділення (Ctrl/Shift+клік), а контекстне меню пропонує готові позначки `+`/`-`/`+/-`, довільний текст через окреме вікно-запит, або очищення позначки для всього виділення. / **EN:** Bulk-applying a review marker to several selected rows at once — the grid supports multi-row selection (Ctrl/Shift+click), and the context menu offers the ready-made `+`/`-`/`+/-` markers, free-form text via a small prompt window, or clearing the marker for the whole selection.
 - **UA:** Чітке розмежування джерел даних review-таблиці: ключ/оригінал/коментар розробника завжди беруться з оригінального CSV гри, а не з review; дві останні колонки Google-таблиці (побажання щодо перекладу, версія/прогрес вичитки) призначені виключно для людей-рецензентів і програма їх ніколи не читає, не зберігає і не перезаписує. / **EN:** A clear separation of the review table's data sources: the key/original/developer comment always come from the game's original CSV, never from review; the Google Sheet's last two columns (translation suggestions, review version/progress) are for human reviewers only, and the program never reads, stores, or overwrites them.
+- **UA:** Пошук одночасно за ключем, оригіналом, перекладом і коментарем розробника — дозволяє швидко знайти рядки за технічними позначками на кшталт «do not translate». / **EN:** Search across the key, original, translation, and developer comment at once — makes it easy to find rows by technical markers such as "do not translate".
 - **UA:** Темна/світла тема, масштаб шрифту, фільтри за статусом (Без перекладу / Перекладено / Технічні / Дублікати / Проблемні / Змінено / Пройшли вичитку / Без вичитки) з живими лічильниками. / **EN:** Dark/light theme, font-size scaling, status filters (Untranslated / Translated / Technical / Duplicates / Issues / Modified / Reviewed / Not reviewed) with live counters.
 - **UA:** Просте файлове логування (`logs/`) ключових операцій і необроблених винятків — для діагностики проблем без потреби відтворювати їх при мені. / **EN:** Simple file logging (`logs/`) of key operations and unhandled exceptions — for troubleshooting without needing to reproduce a problem live.
 
@@ -127,21 +131,50 @@
 
 ---
 
-## 📂 Repository Structure / Структура репозиторію
+## 🏗️ Архітектура / Architecture
 
-- **`/installer`** — **UA:** вихідний скрипт **Inno Setup (`.iss`)** — повна прозорість того, як локалізація розгортається й видаляється. **EN:** the **Inno Setup (`.iss`)** source script — full transparency on how the localization is deployed and uninstalled.
-- **`/SWH.FontTool`** — **UA:** повний C#-набір (.NET 10) для шрифтової інженерії, три проєкти:
-  - `SWH.FontTool.Core` — **UA:** спільні моделі та конфігурація (парсинг бінарного `.fnt`, `GlyphRecord`, система донорів для відсутніх гліфів). **EN:** shared models and configuration (binary `.fnt` parsing, `GlyphRecord`, the donor system for missing glyphs).
-  - `SWH.FontTool.Analyzer` — **UA:** основний рушій: генерація нової геометрії, рендер PNG-атласу, діагностичні інструменти (в т.ч. `LatinReferenceDiagnostic`) та ізольовані експерименти, якими перевірялись припущення рушія гри (толерантність до більшого PNG, поведінка ID-полів тощо). **EN:** the core engine: new-geometry generation, PNG atlas rendering, diagnostic tools (including `LatinReferenceDiagnostic`), and isolated experiments used to validate assumptions about the game engine (tolerance for a larger PNG, ID-field behavior, etc).
-  - `SWH.FontTool.CLI` — **UA:** консольне меню — точка входу. **EN:** the console menu — the entry point.
-- **`/SWH.LocEditor`** — **UA:** WPF-редактор локалізації з графічним інтерфейсом, два проєкти:
-  - `SWH.LocEditor.Core` — **UA:** чиста логіка без залежності від GUI: парсинг `.csv`/`.csv.z`, злиття review-TSV, виявлення технічних/дубльованих рядків, валідація перекладу. **EN:** pure GUI-independent logic: `.csv`/`.csv.z` parsing, review-TSV merging, technical/duplicate row detection, translation validation.
-  - `SWH.LocEditor.GUI` — **UA:** WPF-інтерфейс: тема, фільтри, живе редагування по клітинці, автозбереження, логування. **EN:** the WPF interface: theming, filters, live per-cell editing, autosave, logging.
-- **`/tools`** — **UA:** окремі одно-файлові C#-утиліти:
-  - `TextValidator.cs` — **UA:** злиття перекладів і технічна QA (детально описано в Development Workflow). **EN:** translation merging and technical QA (see Development Workflow above).
-  - `ImpakRepacker.cs` — **UA:** перепакування DLC-архівів зі збереженням оригінальних рівнів стиснення. **EN:** DLC archive repacking that preserves original compression levels.
-  - `OllamaTranslatorClient.cs` — **UA:** клієнт для автоматизації ШІ-перекладу через локальний Ollama. **EN:** automation client for the AI translation pass via local Ollama.
-- **`LICENSE`** — **UA:** ліцензія проєкту (MIT). **EN:** the project's license (MIT).
+```
+SteamWorld-Heist-UA-Localization/
+├── SWH.FontTool/                            # Шрифтова інженерія / Font engineering
+│   ├── SWH.FontTool.Core/                   # Моделі й конфігурація / Models & configuration
+│   │   ├── GlyphRecord.cs                   # Модель гліфа й метрик / Glyph + metrics model
+│   │   ├── MetricsEngine.cs                 # Обчислення калібрування / Calibration math
+│   │   ├── AlphabetProcessor.cs             # Обробка алфавіту / Alphabet processing
+│   │   └── Config.cs                        # Конфігурація / Configuration
+│   ├── SWH.FontTool.Analyzer/               # Основний рушій: генерація геометрії, PNG-атлас,
+│   │                                         # діагностика (LatinReferenceDiagnostic) та ізольовані
+│   │                                         # експерименти, якими перевірялись припущення рушія гри
+│   │                                         # Core engine: geometry generation, PNG atlas,
+│   │                                         # diagnostics (LatinReferenceDiagnostic) and isolated
+│   │                                         # experiments used to validate game-engine assumptions
+│   └── SWH.FontTool.CLI/
+│       └── Program.cs                       # Консольне меню, точка входу / Console menu, entry point
+│
+├── SWH.LocEditor/                            # Редактор локалізації / Localization editor
+│   ├── SWH.LocEditor.Core/                  # Чиста логіка без GUI / Pure GUI-independent logic
+│   │   ├── CsvLocDocument.cs                # Парсинг .csv/.csv.z / .csv/.csv.z parsing
+│   │   ├── LanguageArchive.cs               # Розпакування .z у пам'яті / In-memory .z decompression
+│   │   ├── LocEntry.cs                      # Модель рядка, технічні/дубльовані правила
+│   │   │                                    # Row model, technical/duplicate-detection rules
+│   │   └── LocValidationService.cs          # Живі перевірки перекладу / Live translation checks
+│   └── SWH.LocEditor.GUI/                   # WPF-інтерфейс / The WPF interface
+│       ├── MainWindow.xaml(.cs)             # Таблиця, фільтри, контекстне меню / Table, filters, context menu
+│       ├── ReviewMarkPromptWindow.xaml(.cs) # Вікно-запит для масової вичитки / Bulk review-marker prompt
+│       ├── SettingsWindow.xaml(.cs)         # Налаштування / Settings dialog
+│       ├── ThemeManager.cs                  # Темна/світла тема / Dark/light theme
+│       ├── Models/LocEntryViewModel.cs      # ViewModel рядка таблиці / Grid-row view model
+│       └── Services/SimpleLogger.cs         # Файлове логування / File logging
+│
+├── tools/                                    # Окремі одно-файлові утиліти / Standalone single-file utilities
+│   ├── TextValidator.cs                     # Злиття перекладів і QA / Translation merge & QA
+│   ├── ImpakRepacker.cs                     # Перепакування DLC-архівів / DLC archive repacking
+│   └── OllamaTranslatorClient.cs            # Клієнт AI-перекладу / AI translation client
+│
+├── installer/
+│   └── packexe.iss                          # Скрипт Inno Setup / Inno Setup script
+│
+└── LICENSE                                   # Ліцензія проєкту (MIT) / Project license (MIT)
+```
 
 ---
 
@@ -159,7 +192,7 @@
 ## 📺 Автор / Author
 
 **EMP_UA** — **UA:** Український контент-мейкер та локалізатор ігор. **EN:** Ukrainian content creator & game localizer.
-[YouTube](https://www.youtube.com/@EMPs_UA) • [Twitch](https://www.twitch.tv/emp_ua) • [Discord](https://discord.gg/QdmgsCgPkp) • [Telegram](https://t.me/EMP_UA) • [Website](https://emp-ua-site.pages.dev)
+[YouTube](https://www.youtube.com/@EMPs_UA) • [Twitch](https://www.twitch.tv/emp_ua) • [Discord](https://discord.gg/QdmgsCgPkp) • [Telegram](https://t.me/EMP_UA) • [Website](https://emp-ua.com)
 
 ---
 

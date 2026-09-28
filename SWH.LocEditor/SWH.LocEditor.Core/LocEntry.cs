@@ -72,26 +72,47 @@ public class LocEntry
         new(@"\{[^}]*\}|%[A-Za-z0-9_]*%?|\\n", RegexOptions.Compiled);
 
     // UA: Ключі-винятки, що завжди технічні незалежно від вмісту Original —
-    //     "свідомо технічні" за прямою вказівкою користувача. За аналогією з
-    //     EaW (там теж є кілька хардкод-ключів на кшталт TEXT_END_OF_DATA):
-    //     "string" — не діалог, а перший рядок-метадані файлу (тип/мовна
-    //     декларація); menu_contact_signature/menu_facebook_text/
-    //     menu_email_text/menu_options_vsync/menu_twitter_text/
-    //     menu_website_text/menu_youtube_text — назви брендів (Facebook,
-    //     Twitter, YouTube), технічний термін (VSync) і підпис студії — усі
-    //     МАЮТЬ реальні літери (тому "немає літер" їх не ловить), але за
-    //     змістом ніколи не перекладаються.
+    //     свідомо технічні, попри те що містять реальні літери (тому
+    //     "немає літер" їх не ловить), і "do not translate" в коментарі теж
+    //     не завжди присутнє. За аналогією з EaW (там теж є кілька
+    //     хардкод-ключів на кшталт TEXT_END_OF_DATA):
+    //      - "string" — не діалог, а перший рядок-метадані файлу (тип/мовна
+    //        декларація);
+    //      - menu_contact_signature/menu_facebook_text/menu_email_text/
+    //        menu_options_vsync/menu_twitter_text/menu_website_text/
+    //        menu_youtube_text — назви брендів (Facebook, Twitter, YouTube),
+    //        технічний термін (VSync) і підпис студії — за змістом ніколи не
+    //        перекладаються;
+    //      - weapon_smg_02/weapon_smg_03 — назва зброї "Frontier
+    //        SMG"/"Frontier SMG MkII" з усталеною англомовною абревіатурою
+    //        "SMG" (Sub Machine Gun), яка лишається розпізнаваною позначкою
+    //        класу зброї, а не перекладається за змістом;
+    //      - bark_dora_recruited_no/bark_dora_recruited_yes — латинські
+    //        фрази ("Tempora mutantur.", "Audentes Fortuna Iuvat!"), що
+    //        лишаються латиною в обох мовних версіях; коментар розробника
+    //        "Latin: ..." — лише переклад-підказка для контексту, а не
+    //        текст, який іде в гру.
     // EN: Key exceptions that are always technical regardless of Original
-    //     content — "intentionally technical" per explicit user
-    //     instruction. Same pattern as EaW (which also has a few hardcoded
-    //     keys like TEXT_END_OF_DATA): "string" — not dialogue, but the
-    //     file's first metadata row (type/language declaration);
-    //     menu_contact_signature/menu_facebook_text/menu_email_text/
-    //     menu_options_vsync/menu_twitter_text/menu_website_text/
-    //     menu_youtube_text — brand names (Facebook, Twitter, YouTube), a
-    //     technical term (VSync), and the studio signature — all DO contain
-    //     real letters (so "no letters" doesn't catch them), but are never
-    //     translated by meaning.
+    //     content — intentionally technical despite containing real letters
+    //     (so "no letters" doesn't catch them), and "do not translate" isn't
+    //     always present in the comment either. Same pattern as EaW (which
+    //     also has a few hardcoded keys like TEXT_END_OF_DATA):
+    //      - "string" — not dialogue, but the file's first metadata row
+    //        (type/language declaration);
+    //      - menu_contact_signature/menu_facebook_text/menu_email_text/
+    //        menu_options_vsync/menu_twitter_text/menu_website_text/
+    //        menu_youtube_text — brand names (Facebook, Twitter, YouTube), a
+    //        technical term (VSync), and the studio signature — never
+    //        translated by meaning;
+    //      - weapon_smg_02/weapon_smg_03 — the weapon name "Frontier
+    //        SMG"/"Frontier SMG MkII", where "SMG" is an established English
+    //        abbreviation (Sub Machine Gun) that stays as a recognizable
+    //        weapon-class tag rather than being translated by meaning;
+    //      - bark_dora_recruited_no/bark_dora_recruited_yes — Latin phrases
+    //        ("Tempora mutantur.", "Audentes Fortuna Iuvat!") that stay in
+    //        Latin in both language versions; the developer's "Latin: ..."
+    //        comment is just a translation hint for context, not text that
+    //        goes into the game.
     private static readonly HashSet<string> TechnicalKeyExceptions =
         new(StringComparer.OrdinalIgnoreCase)
         {
@@ -103,6 +124,44 @@ public class LocEntry
             "menu_twitter_text",
             "menu_website_text",
             "menu_youtube_text",
+            "weapon_smg_02",
+            "weapon_smg_03",
+            "bark_dora_recruited_no",
+            "bark_dora_recruited_yes",
+        };
+
+    // UA: Зворотні винятки — ключі, які НІКОЛИ не вважати технічними, навіть
+    //     якщо коментар розробника містить фразу "do not translate"/"don't
+    //     translate". Загальне правило CommentSaysDoNotTranslate ловить цю
+    //     фразу БУДЬ-ДЕ в коментарі, а тут вона стосується лише ОДНОГО слова
+    //     всередині рядка (власної назви), а не всього рядка:
+    //      - encounter_desc_scrapper_04: "Treat "Gallons" as a currency name
+    //        and do not translate" — йдеться про слово "Gallons"; решта
+    //        опису локації (Mining Colony, Crusher-class Scrappers тощо) —
+    //        звичайний текст, який треба перекладати;
+    //      - banner_boss_3_killed_header: "”Vectron” is a name, don't
+    //        translate" — йдеться лише про ім'я "Vectron"; сама фраза
+    //        "Vectron: Defeated!" — звичайний текст для перекладу
+    //        ("Вектрона Переможено!").
+    // EN: Reverse exceptions — keys that must NEVER be treated as technical,
+    //     even though the developer's comment contains the phrase "do not
+    //     translate"/"don't translate". The general CommentSaysDoNotTranslate
+    //     rule matches that phrase ANYWHERE in the comment, but here it
+    //     refers to just ONE word inside the row (a proper noun), not the
+    //     whole row:
+    //      - encounter_desc_scrapper_04: "Treat "Gallons" as a currency name
+    //        and do not translate" is about the word "Gallons" only; the
+    //        rest of the location description (Mining Colony, Crusher-class
+    //        Scrappers, etc.) is ordinary translatable text;
+    //      - banner_boss_3_killed_header: "”Vectron” is a name, don't
+    //        translate" is about the name "Vectron" only; the phrase
+    //        "Vectron: Defeated!" itself is ordinary text to translate
+    //        ("Вектрона Переможено!").
+    private static readonly HashSet<string> AlwaysTranslatableKeyExceptions =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            "encounter_desc_scrapper_04",
+            "banner_boss_3_killed_header",
         };
 
     // UA: ЗАГАЛЬНЕ правило замість подальшого хардкоду ключів — перевірено
@@ -136,15 +195,24 @@ public class LocEntry
     ///     TechnicalKeyExceptions, або сам розробник написав у коментарі
     ///     "do not translate" / "don't translate". Такі рядки падають в
     ///     окремий фільтр "Технічні", а НЕ в "Без перекладу", і виключаються
-    ///     з підрахунку дублікатів.
+    ///     з підрахунку дублікатів. Виняток: AlwaysTranslatableKeyExceptions
+    ///     має пріоритет над усім іншим — якщо ключ у цьому списку, рядок
+    ///     ніколи не технічний, навіть якщо коментар містить "do not
+    ///     translate" (бо там ця фраза стосується лише одного слова, а не
+    ///     всього рядка).
     /// EN: A technical row — has no ACTUAL text to translate: the original
     ///     is empty, or after stripping tags/placeholders ({...}, %1%, \n)
     ///     no letters remain, or the key is in TechnicalKeyExceptions, or the
     ///     developer himself wrote "do not translate" / "don't translate" in
     ///     the comment. Such rows fall into a separate "Technical" filter,
-    ///     NOT "Untranslated", and are excluded from duplicate-group counting.
+    ///     NOT "Untranslated", and are excluded from duplicate-group
+    ///     counting. Exception: AlwaysTranslatableKeyExceptions takes
+    ///     priority over everything else — if the key is in that list, the
+    ///     row is never technical, even if the comment contains "do not
+    ///     translate" (because there the phrase refers to just one word, not
+    ///     the whole row).
     /// </summary>
-    public bool IsTechnical => !IsStructural &&
+    public bool IsTechnical => !IsStructural && !AlwaysTranslatableKeyExceptions.Contains(Key) &&
         (TechnicalKeyExceptions.Contains(Key) || HasNoLetters(Original) || CommentSaysDoNotTranslate(Comment));
 
     private static bool HasNoLetters(string s)

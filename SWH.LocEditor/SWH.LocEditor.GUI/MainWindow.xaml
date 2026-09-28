@@ -181,9 +181,10 @@
             <Separator Margin="6,0"/>
             <TextBlock Text="🔎" VerticalAlignment="Center" Margin="6,0,4,0"
                        Foreground="{DynamicResource TextSec}"/>
-            <TextBox x:Name="SearchBox" Width="260" VerticalContentAlignment="Center"
+            <TextBox x:Name="SearchBox" Width="300" VerticalContentAlignment="Center"
                      Style="{StaticResource DarkInput}"
-                     Tag="Ключ · оригінал · переклад / Key · original · translation"
+                     Tag="Ключ · оригінал · переклад · коментар розробника / Key · original · translation · developer comment"
+                     ToolTip="UA: Шукає також у коментарі розробника (3-тя колонка) — напр. «do not translate» / EN: Also searches the developer comment (3rd column) — e.g. «do not translate»"
                      TextChanged="SearchBox_TextChanged"/>
         </StackPanel>
 
@@ -273,10 +274,22 @@
              EN: NO RowBackground/AlternatingRowBackground — they competed
              with RowStyle and muted the status fills (see the comment
              above RowStyle). RowStyle is the single source of row color. -->
+        <!-- UA: SelectionMode="Extended" дозволяє виділити кілька рядків
+             одразу (Ctrl/Shift+клік), щоб застосувати позначку вичитки до
+             всіх виділених одним пунктом контекстного меню (див. підменю
+             "Позначити вичитку для вибраних" нижче). Решта дій контекстного
+             меню (дублікати, копіювання) працює лише з MainGrid.SelectedItem
+             — одним, "поточним" рядком.
+             EN: SelectionMode="Extended" allows selecting several rows at
+             once (Ctrl/Shift+click), so a review marker can be applied to
+             all of them via one context-menu item (see the "Mark review for
+             selected" submenu below). The rest of the context menu's actions
+             (duplicates, copying) work off MainGrid.SelectedItem — a single
+             "current" row. -->
         <DataGrid x:Name="MainGrid" Grid.Row="4"
                   AutoGenerateColumns="False" CanUserAddRows="False" CanUserDeleteRows="False"
                   RowStyle="{StaticResource RowStyle}"
-                  SelectionUnit="FullRow" SelectionMode="Single"
+                  SelectionUnit="FullRow" SelectionMode="Extended"
                   FontSize="{DynamicResource FontBase}"
                   Background="{DynamicResource BgSurface}"
                   Foreground="{DynamicResource TextPrim}"
@@ -549,6 +562,27 @@
                          the original text. -->
                     <MenuItem Header="💬 Копіювати коментар розробника / Copy developer comment" Click="CtxCopyDevComment_Click"/>
                     <MenuItem Header="📝 Вставити оригінал як переклад / Paste original as translation" Click="CtxPasteOriginalAsTranslation_Click"/>
+                    <Separator/>
+                    <!-- UA: Масове проставлення «Вичитки» — працює з УСІМА
+                         виділеними рядками (MainGrid.SelectedItems), а не
+                         лише з поточним, на відміну від решти пунктів цього
+                         меню. Ті самі готові позначки, що й у самій колонці
+                         (+, -, +/-), плюс довільний текст через окреме
+                         віконце-запит і швидке очищення.
+                         EN: Bulk-setting the "Review" marker — works on ALL
+                         selected rows (MainGrid.SelectedItems), not just the
+                         current one, unlike the rest of this menu. The same
+                         ready-made markers as the column itself (+, -, +/-),
+                         plus free-form text via a small prompt window and a
+                         quick clear. -->
+                    <MenuItem Header="✅ Позначити вичитку для вибраних рядків / Mark review for selected rows">
+                        <MenuItem Header="+" Click="CtxMarkReviewSelectedPreset_Click" Tag="+"/>
+                        <MenuItem Header="-" Click="CtxMarkReviewSelectedPreset_Click" Tag="-"/>
+                        <MenuItem Header="+/-" Click="CtxMarkReviewSelectedPreset_Click" Tag="+/-"/>
+                        <Separator/>
+                        <MenuItem Header="✎ Власний текст... / Custom text..." Click="CtxMarkReviewSelectedCustom_Click"/>
+                        <MenuItem Header="🗑 Очистити / Clear" Click="CtxMarkReviewSelectedClear_Click"/>
+                    </MenuItem>
                 </ContextMenu>
             </DataGrid.ContextMenu>
         </DataGrid>
