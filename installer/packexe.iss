@@ -76,8 +76,8 @@ english.GameFilesNotFound=Game files not found in the selected folder (%1).%n%nA
 
 [Files]
 ; UA: Шляхи до файлів перекладу / EN: Localization file paths
-Source: "SteamWorld Heist 101\Bundle\*"; DestDir: "{app}\Bundle"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "SteamWorld Heist 101\DLC\*"; DestDir: "{app}\DLC"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "SteamWorld Heist 102\Bundle\*"; DestDir: "{app}\Bundle"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "SteamWorld Heist 102\DLC\*"; DestDir: "{app}\DLC"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; UA: Текстовий Readme — необов'язковий локальний файл (не в git),
 ;     кладеться поруч зі скриптом перед компіляцією інсталятора.
 ; EN: Text readme — an optional, local-only file (not in git), placed
